@@ -1,0 +1,325 @@
+<!DOCTYPE html><html class="light" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>FamPlan - Commute &amp; Route Details</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-background": "#40000c",
+                        "tertiary-container": "#381f12",
+                        "surface-bright": "#fff8f7",
+                        "surface-warm": "#fffcfb",
+                        "on-primary-fixed-variant": "#703341",
+                        "tertiary": "#1f0a02",
+                        "secondary-fixed-dim": "#ffb3b5",
+                        "on-primary": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed": "#2d1509",
+                        "surface-variant": "#ffdada",
+                        "salmon": "#fcb9b2",
+                        "on-secondary-container": "#73061e",
+                        "on-error": "#ffffff",
+                        "secondary": "#a93342",
+                        "on-surface-variant": "#524345",
+                        "error": "#ba1a1a",
+                        "surface-container-lowest": "#ffffff",
+                        "surface": "#fff8f7",
+                        "outline-variant": "#d7c1c4",
+                        "secondary-fixed": "#ffdada",
+                        "on-surface": "#40000c",
+                        "primary-fixed": "#ffd9de",
+                        "on-error-container": "#93000a",
+                        "on-secondary": "#ffffff",
+                        "primary-container": "#461220",
+                        "background": "#fff8f7",
+                        "peach": "#fed0bb",
+                        "primary": "#2a000c",
+                        "surface-container-highest": "#ffdada",
+                        "surface-container": "#ffe9e9",
+                        "surface-container-low": "#fff0f0",
+                        "on-primary-container": "#c17785",
+                        "cinnabar": "#b23a48",
+                        "tertiary-fixed-dim": "#e9bda9",
+                        "on-primary-fixed": "#3a0817",
+                        "inverse-surface": "#620e1c",
+                        "secondary-container": "#ff7480",
+                        "surface-dim": "#ffcecf",
+                        "tertiary-fixed": "#ffdbcb",
+                        "on-tertiary-fixed-variant": "#5f4030",
+                        "deep-burgundy": "#461220",
+                        "surface-container-high": "#ffe1e1",
+                        "primary-fixed-dim": "#ffb2bf",
+                        "inverse-on-surface": "#ffedec",
+                        "on-secondary-fixed-variant": "#891a2c",
+                        "on-tertiary-container": "#ab8471",
+                        "inverse-primary": "#ffb2bf",
+                        "on-secondary-fixed": "#40000c",
+                        "outline": "#857375",
+                        "surface-tint": "#8c4a58",
+                        "error-container": "#ffdad6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "xs": "4px",
+                        "sm": "8px",
+                        "base": "4px",
+                        "margin-mobile": "16px",
+                        "xl": "32px",
+                        "margin-desktop": "64px",
+                        "md": "16px",
+                        "gutter": "24px",
+                        "lg": "24px"
+                    },
+                    "fontFamily": {
+                        "title-md": ["Public Sans"],
+                        "label-md": ["Public Sans"],
+                        "body-sm": ["Public Sans"],
+                        "display-lg": ["Public Sans"],
+                        "title-lg": ["Public Sans"],
+                        "label-sm": ["Public Sans"],
+                        "headline-lg": ["Public Sans"],
+                        "body-lg": ["Public Sans"],
+                        "body-md": ["Public Sans"],
+                        "headline-lg-mobile": ["Public Sans"],
+                        "headline-md": ["Public Sans"],
+                        "label-lg": ["Public Sans"]
+                    },
+                    "fontSize": {
+                        "title-md": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "600" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "title-lg": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "label-sm": ["11px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "600" }]
+                    }
+                },
+            },
+        }
+    </script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+        body { font-family: 'Public Sans', sans-serif; background-color: #fffcfb; color: #40000c; }
+    </style>
+</head>
+<body class="bg-surface-warm min-h-screen flex flex-col">
+<!-- Top Navigation App Bar -->
+<nav class="sticky top-0 w-full z-50 flex justify-between items-center px-margin-desktop bg-surface py-4 border-b border-outline-variant shadow-sm hidden md:flex">
+<div class="flex items-center gap-6">
+<span class="text-headline-md font-headline-md font-bold text-cinnabar">FamPlan</span>
+<div class="hidden md:flex gap-6">
+<a class="text-on-surface-variant text-label-md font-label-md hover:text-cinnabar transition-colors duration-200" href="#">Explore</a>
+<a class="text-on-surface-variant text-label-md font-label-md hover:text-cinnabar transition-colors duration-200" href="#">Shortlist</a>
+<a class="text-on-surface-variant text-label-md font-label-md hover:text-cinnabar transition-colors duration-200" href="#">Eligibility</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-label-md font-label-md text-on-surface-variant hover:text-cinnabar transition-colors duration-200 border border-outline px-4 py-2 rounded-lg">Compare</button>
+<button class="bg-cinnabar text-on-primary text-label-md font-label-md px-4 py-2 rounded-lg hover:bg-opacity-90 transition-colors">Sign In</button>
+<button class="text-on-surface-variant hover:text-cinnabar transition-colors duration-200 flex items-center justify-center p-2 rounded-full hover:bg-surface-container-high">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+</button>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-grow w-full max-w-[1440px] mx-auto px-margin-mobile md:px-margin-desktop py-xl grid grid-cols-1 md:grid-cols-12 gap-gutter">
+<!-- Sidebar - Route Details & Options -->
+<aside class="col-span-1 md:col-span-4 flex flex-col gap-xl">
+<!-- Header section with back button implicitly handled by context, but providing clear context -->
+<div class="flex flex-col gap-sm">
+<div class="flex items-center gap-sm text-outline hover:text-cinnabar cursor-pointer transition-colors w-fit">
+<span class="material-symbols-outlined text-sm" data-icon="arrow_back">arrow_back</span>
+<span class="text-label-md font-label-md">Back to Flat Details</span>
+</div>
+<h1 class="text-headline-lg-mobile md:text-headline-lg font-headline-lg-mobile md:font-headline-lg text-primary">Commute &amp; Routes</h1>
+<p class="text-body-md font-body-md text-on-surface-variant">From Blk 204B Clementi Ave 6 to Primary Destinations</p>
+</div>
+<!-- Destination Selector -->
+<div class="bg-white rounded-xl border border-outline-variant p-4 flex flex-col gap-4">
+<h2 class="text-title-md font-title-md text-deep-burgundy">Priority Destinations</h2>
+<div class="flex flex-col gap-2 relative">
+<!-- Point A -->
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-cinnabar" data-icon="trip_origin">trip_origin</span>
+<div class="flex-1 bg-surface-container-low border border-outline-variant rounded-lg p-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-outline" data-icon="home">home</span>
+<span class="text-body-sm font-body-sm text-on-surface truncate">Blk 204B Clementi Ave 6</span>
+</div>
+</div>
+<!-- Connector Line -->
+<div class="absolute left-[11px] top-[24px] bottom-[24px] w-[2px] bg-outline-variant z-0"></div>
+<!-- Point B Dropdown -->
+<div class="flex items-center gap-3 z-10 relative">
+<span class="material-symbols-outlined text-salmon" data-icon="location_on" data-weight="fill" style="font-variation-settings: 'FILL' 1;">location_on</span>
+<div class="flex-1 bg-white border border-cinnabar shadow-sm rounded-lg p-2 flex items-center justify-between cursor-pointer focus-within:ring-2 focus-within:ring-peach transition-shadow">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-outline" data-icon="work">work</span>
+<span class="text-body-sm font-body-sm text-on-surface font-semibold">Raffles Place (Work)</span>
+</div>
+<span class="material-symbols-outlined text-outline" data-icon="expand_more">expand_more</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Mode Selector -->
+<div class="flex gap-2">
+<button class="flex-1 flex flex-col items-center justify-center p-3 rounded-lg border border-cinnabar bg-surface-container text-cinnabar">
+<span class="material-symbols-outlined mb-1" data-icon="directions_transit">directions_transit</span>
+<span class="text-label-sm font-label-sm">Transit</span>
+</button>
+<button class="flex-1 flex flex-col items-center justify-center p-3 rounded-lg border border-outline-variant bg-white text-on-surface-variant hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined mb-1" data-icon="directions_car">directions_car</span>
+<span class="text-label-sm font-label-sm">Drive</span>
+</button>
+<button class="flex-1 flex flex-col items-center justify-center p-3 rounded-lg border border-outline-variant bg-white text-on-surface-variant hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined mb-1" data-icon="directions_walk">directions_walk</span>
+<span class="text-label-sm font-label-sm">Walk</span>
+</button>
+<button class="flex-1 flex flex-col items-center justify-center p-3 rounded-lg border border-outline-variant bg-white text-on-surface-variant hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined mb-1" data-icon="directions_bike">directions_bike</span>
+<span class="text-label-sm font-label-sm">Cycle</span>
+</button>
+</div>
+<!-- Route Options List -->
+<div class="flex flex-col gap-4 flex-grow overflow-y-auto pr-2">
+<!-- Option 1: Best Match -->
+<div class="bg-peach bg-opacity-20 rounded-xl border border-cinnabar p-4 flex flex-col gap-3 relative overflow-hidden shadow-sm">
+<div class="absolute top-0 left-0 w-1 h-full bg-cinnabar"></div>
+<div class="flex justify-between items-start pl-2">
+<div class="flex items-center gap-2">
+<span class="bg-salmon text-deep-burgundy text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Fastest</span>
+<span class="bg-white text-on-surface border border-outline-variant text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]" data-icon="accessible">accessible</span>
+                                Barrier-Free
+                            </span>
+</div>
+<span class="text-title-lg font-title-lg text-primary font-bold">42 min</span>
+</div>
+<div class="pl-2 flex items-center gap-2 text-body-sm font-body-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-outline text-sm" data-icon="directions_walk">directions_walk</span>
+<span>8 min</span>
+<span class="text-outline">•</span>
+<div class="flex items-center gap-1 bg-[#009640] bg-opacity-10 px-1.5 py-0.5 rounded border border-[#009640]">
+<span class="w-3 h-3 rounded-full bg-[#009640] block"></span>
+<span class="text-[11px] font-bold text-[#009640]">EWL</span>
+</div>
+<span>12 min</span>
+<span class="text-outline">•</span>
+<div class="flex items-center gap-1 bg-[#D42E12] bg-opacity-10 px-1.5 py-0.5 rounded border border-[#D42E12]">
+<span class="w-3 h-3 rounded-full bg-[#D42E12] block"></span>
+<span class="text-[11px] font-bold text-[#D42E12]">NSL</span>
+</div>
+<span>18 min</span>
+</div>
+</div>
+<!-- Option 2 -->
+<div class="bg-white rounded-xl border border-outline-variant p-4 flex flex-col gap-3 hover:border-peach transition-colors cursor-pointer">
+<div class="flex justify-between items-start">
+<div class="flex items-center gap-2">
+<span class="bg-surface-container-high text-on-surface-variant text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]" data-icon="accessible_forward">accessible_forward</span>
+                                Partial Access
+                            </span>
+</div>
+<span class="text-title-md font-title-md text-on-surface font-semibold">55 min</span>
+</div>
+<div class="flex items-center gap-2 text-body-sm font-body-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-outline text-sm" data-icon="directions_bus">directions_bus</span>
+<span>Bus 154</span>
+<span class="text-outline">•</span>
+<span class="material-symbols-outlined text-outline text-sm" data-icon="directions_walk">directions_walk</span>
+<span>12 min</span>
+</div>
+</div>
+</div>
+<!-- Accessible Toggle -->
+<div class="mt-auto pt-4 border-t border-outline-variant flex items-center justify-between">
+<div class="flex flex-col">
+<span class="text-label-md font-label-md text-deep-burgundy">Barrier-Free Routes Only</span>
+<span class="text-label-sm font-label-sm text-on-surface-variant">Prioritize lifts, ramps, and sheltered paths.</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value="">
+<div class="w-11 h-6 bg-surface-container-high peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-outline-variant after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cinnabar"></div>
+</label>
+</div>
+</aside>
+<!-- Main Map Area -->
+<section class="col-span-1 md:col-span-8 flex flex-col rounded-2xl overflow-hidden shadow-sm border border-outline-variant relative bg-white min-h-[500px]">
+<!-- Map Placeholder / Image -->
+<div class="w-full h-full relative" data-location="Singapore">
+<!-- Fallback background image if map data-location isn't processed immediately -->
+<div class="w-full h-full bg-cover bg-center absolute inset-0" data-alt="A clean, modern, top-down digital map interface of Singapore. The map style is light and professional, using a white and very light peach base palette (surface-warm). Major roads are highlighted in subtle grays, while a specific route is boldly highlighted in a vibrant Cinnabar red line connecting two points. Important landmarks are marked with minimal, sophisticated iconography. The overall aesthetic is akin to a premium civic application, bright, clear, and highly functional." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAB66NbDmZQAgM4xDAfOE47y_1Jr_612qFAm-OF3ksmNIsYsmbUoLcTQDTQhRSPdv8AHXfIYTtIKchM0pbqWoApUe3rT6D2YJ5n5dHXIvVRhBSC-qscF2yDJRaE7-9rPfAeKwKuk0Kn2CaX90_TXyJxsIrROzV91nfDPtUQ1S-SreIxeBAckLlNatqwwTIoxBqL2ZLEbd43MqT1OWK5yjIgeyW5pGy3aCCik_d6nYCr8kJG49B0e_ClZQ')"></div>
+<!-- Overlay Map UI Elements -->
+<div class="absolute top-4 right-4 flex flex-col gap-2">
+<button class="bg-white p-2 rounded-lg shadow-sm border border-outline-variant text-on-surface hover:text-cinnabar hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined" data-icon="my_location">my_location</span>
+</button>
+<button class="bg-white p-2 rounded-lg shadow-sm border border-outline-variant text-on-surface hover:text-cinnabar hover:bg-surface-container-low transition-colors flex flex-col gap-1 items-center">
+<span class="material-symbols-outlined text-[16px]" data-icon="add">add</span>
+</button>
+<button class="bg-white p-2 rounded-lg shadow-sm border border-outline-variant text-on-surface hover:text-cinnabar hover:bg-surface-container-low transition-colors flex flex-col gap-1 items-center">
+<span class="material-symbols-outlined text-[16px]" data-icon="remove">remove</span>
+</button>
+</div>
+<!-- Map Legend / Overlays -->
+<div class="absolute bottom-6 left-6 right-6 md:right-auto md:w-80 bg-white/95 backdrop-blur-sm p-4 rounded-xl shadow-lg border border-outline-variant flex flex-col gap-3">
+<h3 class="text-label-md font-label-md text-deep-burgundy border-b border-outline-variant pb-2">Path Accessibility</h3>
+<div class="flex items-center gap-2">
+<div class="w-8 h-1 bg-cinnabar rounded-full"></div>
+<span class="text-label-sm font-label-sm text-on-surface">Accessible Route (Lifts/Ramps)</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-8 h-1 bg-outline rounded-full border border-dashed border-white"></div>
+<span class="text-label-sm font-label-sm text-on-surface-variant">Stairs / Uneven Path</span>
+</div>
+</div>
+<!-- Attribution & Data Freshness -->
+<div class="absolute bottom-2 right-2 flex flex-col items-end gap-1">
+<div class="bg-white/80 backdrop-blur px-2 py-1 rounded text-[10px] text-on-surface-variant border border-outline-variant shadow-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]" data-icon="update">update</span>
+                         Data sync: Just now
+                     </div>
+<div class="bg-white/80 backdrop-blur px-2 py-1 rounded text-[10px] text-on-surface-variant border border-outline-variant shadow-sm flex items-center gap-1">
+                         Powered by OneMap SG
+                     </div>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation App Bar (Mobile Only) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-2 bg-surface-container shadow-lg md:hidden rounded-t-xl border-t-0">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high px-2 py-1 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="search">search</span>
+<span class="text-label-sm font-label-sm">Search</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high px-2 py-1 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="favorite">favorite</span>
+<span class="text-label-sm font-label-sm">Shortlist</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container px-4 py-1 rounded-full scale-95 transition-transform shadow-sm" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="assignment_turned_in">assignment_turned_in</span>
+<span class="text-label-sm font-label-sm font-bold">HFE Check</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high px-2 py-1 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="person">person</span>
+<span class="text-label-sm font-label-sm">Profile</span>
+</a>
+</nav>
+</body></html>

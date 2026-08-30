@@ -1,0 +1,382 @@
+<!DOCTYPE html><html class="light" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>FamPlan - Advanced Search</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed": "#ffdbcb",
+                        "on-secondary-container": "#73061e",
+                        "background": "#fff8f7",
+                        "surface-bright": "#fff8f7",
+                        "on-error-container": "#93000a",
+                        "error": "#ba1a1a",
+                        "surface-container": "#ffe9e9",
+                        "on-secondary": "#ffffff",
+                        "secondary-fixed": "#ffdada",
+                        "surface": "#fff8f7",
+                        "on-primary-container": "#c17785",
+                        "inverse-primary": "#ffb2bf",
+                        "inverse-on-surface": "#ffedec",
+                        "tertiary": "#1f0a02",
+                        "on-primary-fixed": "#3a0817",
+                        "on-surface-variant": "#524345",
+                        "cinnabar": "#b23a48",
+                        "secondary": "#a93342",
+                        "surface-variant": "#ffdada",
+                        "surface-container-highest": "#ffdada",
+                        "error-container": "#ffdad6",
+                        "surface-tint": "#8c4a58",
+                        "secondary-fixed-dim": "#ffb3b5",
+                        "on-tertiary": "#ffffff",
+                        "peach": "#fed0bb",
+                        "primary-fixed": "#ffd9de",
+                        "deep-burgundy": "#461220",
+                        "on-surface": "#40000c",
+                        "secondary-container": "#ff7480",
+                        "surface-container-low": "#fff0f0",
+                        "outline": "#857375",
+                        "primary-container": "#461220",
+                        "tertiary-fixed-dim": "#e9bda9",
+                        "surface-dim": "#ffcecf",
+                        "surface-warm": "#fffcfb",
+                        "on-secondary-fixed": "#40000c",
+                        "inverse-surface": "#620e1c",
+                        "on-tertiary-fixed": "#2d1509",
+                        "salmon": "#fcb9b2",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary-fixed-variant": "#891a2c",
+                        "tertiary-container": "#381f12",
+                        "surface-container-high": "#ffe1e1",
+                        "on-tertiary-container": "#ab8471",
+                        "primary-fixed-dim": "#ffb2bf",
+                        "on-background": "#40000c",
+                        "on-error": "#ffffff",
+                        "primary": "#2a000c",
+                        "on-primary-fixed-variant": "#703341",
+                        "outline-variant": "#d7c1c4",
+                        "on-tertiary-fixed-variant": "#5f4030"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "md": "16px",
+                        "sm": "8px",
+                        "margin-mobile": "16px",
+                        "margin-desktop": "64px",
+                        "xs": "4px",
+                        "lg": "24px",
+                        "gutter": "24px",
+                        "xl": "32px",
+                        "base": "4px"
+                    },
+                    "fontFamily": {
+                        "title-md": ["Public Sans"],
+                        "body-lg": ["Public Sans"],
+                        "label-lg": ["Public Sans"],
+                        "display-lg": ["Public Sans"],
+                        "body-md": ["Public Sans"],
+                        "body-sm": ["Public Sans"],
+                        "headline-lg": ["Public Sans"],
+                        "title-lg": ["Public Sans"],
+                        "label-md": ["Public Sans"],
+                        "headline-lg-mobile": ["Public Sans"],
+                        "label-sm": ["Public Sans"],
+                        "headline-md": ["Public Sans"]
+                    },
+                    "fontSize": {
+                        "title-md": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+                        "title-lg": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+                        "label-sm": ["11px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined[data-weight="fill"] {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body-md antialiased min-h-screen flex flex-col relative overflow-hidden">
+<!-- Blurred Background Context (Search Results Canvas) -->
+<div class="absolute inset-0 w-full h-full z-0 opacity-40 blur-md pointer-events-none">
+<div class="w-full h-full bg-surface-container flex items-start justify-center pt-32 px-margin-desktop gap-gutter">
+<!-- Simulated grid of properties -->
+<div class="w-full max-w-[1200px] grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
+<div class="bg-white h-64 rounded-xl border border-deep-burgundy/10 opacity-70"></div>
+<div class="bg-white h-64 rounded-xl border border-deep-burgundy/10 opacity-70"></div>
+<div class="bg-white h-64 rounded-xl border border-deep-burgundy/10 opacity-70"></div>
+<div class="bg-white h-64 rounded-xl border border-deep-burgundy/10 opacity-70"></div>
+<div class="bg-white h-64 rounded-xl border border-deep-burgundy/10 opacity-70"></div>
+<div class="bg-white h-64 rounded-xl border border-deep-burgundy/10 opacity-70"></div>
+</div>
+</div>
+</div>
+<!-- TopNavBar -->
+<header class="w-full top-0 sticky bg-surface dark:bg-surface border-b border-deep-burgundy/10 z-50">
+<div class="flex justify-between items-center px-margin-mobile md:px-margin-desktop py-md max-w-[1200px] mx-auto">
+<div class="flex items-center gap-xl">
+<div class="font-headline-md text-headline-md font-bold text-deep-burgundy dark:text-primary-fixed-dim cursor-pointer">
+                    FamPlan
+                </div>
+<nav class="hidden md:flex gap-lg">
+<a class="text-cinnabar dark:text-secondary-fixed border-b-2 border-cinnabar pb-1 font-title-md hover:text-cinnabar dark:hover:text-peach transition-colors duration-200" href="#">
+                        Explore
+                    </a>
+<a class="text-on-surface-variant dark:text-outline-variant font-body-md hover:text-cinnabar dark:hover:text-peach transition-colors duration-200" href="#">
+                        Shortlist
+                    </a>
+<a class="text-on-surface-variant dark:text-outline-variant font-body-md hover:text-cinnabar dark:hover:text-peach transition-colors duration-200" href="#">
+                        Eligibility
+                    </a>
+</nav>
+</div>
+<div class="flex items-center gap-md">
+<div class="hidden md:flex items-center gap-sm bg-surface-container rounded-full px-4 py-2 border border-outline-variant">
+<span class="material-symbols-outlined text-on-surface-variant">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-body-md text-on-surface w-48 p-0" disabled="" placeholder="Search locations..." type="text">
+</div>
+<button class="font-label-lg text-label-lg text-white bg-cinnabar rounded px-4 py-2 hover:opacity-90 transition-opacity">
+                    Sign In
+                </button>
+</div>
+</div>
+</header>
+<!-- Main Content Area: Advanced Search Overlay -->
+<main class="flex-grow w-full max-w-[1200px] mx-auto px-margin-mobile md:px-margin-desktop py-lg md:py-xl z-10 relative flex flex-col md:flex-row gap-gutter">
+<!-- Filters Sidebar -->
+<aside class="w-full md:w-1/3 flex flex-col gap-lg">
+<!-- Quick Actions -->
+<div class="bg-surface-warm p-lg rounded-xl border border-deep-burgundy/10 shadow-sm">
+<h2 class="font-title-lg text-title-lg text-deep-burgundy mb-sm">Saved Preferences</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-md">Load your personalized housing criteria instantly.</p>
+<button class="w-full bg-peach text-deep-burgundy font-label-lg text-label-lg py-3 px-4 rounded-lg flex items-center justify-center gap-sm hover:bg-salmon transition-colors">
+<span class="material-symbols-outlined text-[20px]">tune</span>
+                    Apply My Preferences
+                </button>
+</div>
+<!-- Core Filters -->
+<div class="bg-white p-lg rounded-xl border border-deep-burgundy/10 shadow-sm flex flex-col gap-lg">
+<div class="flex justify-between items-center border-b border-surface-container pb-sm">
+<h2 class="font-title-md text-title-md text-deep-burgundy">Filters</h2>
+<button class="text-cinnabar font-label-sm text-label-sm hover:underline">Clear All</button>
+</div>
+<!-- Price Range -->
+<div class="flex flex-col gap-sm">
+<label class="font-label-lg text-label-lg text-on-surface">Price Range (SGD)</label>
+<div class="flex gap-sm items-center">
+<div class="relative w-full">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant font-body-sm">$</span>
+<input class="w-full pl-8 pr-3 py-2 bg-white border border-outline-variant rounded focus:border-cinnabar focus:ring-1 focus:ring-peach text-body-md text-on-surface" placeholder="Min" type="number">
+</div>
+<span class="text-on-surface-variant">-</span>
+<div class="relative w-full">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant font-body-sm">$</span>
+<input class="w-full pl-8 pr-3 py-2 bg-white border border-outline-variant rounded focus:border-cinnabar focus:ring-1 focus:ring-peach text-body-md text-on-surface" placeholder="Max" type="number">
+</div>
+</div>
+</div>
+<!-- Towns -->
+<div class="flex flex-col gap-sm">
+<label class="font-label-lg text-label-lg text-on-surface">Town / Estate</label>
+<select class="w-full px-3 py-2 bg-white border border-outline-variant rounded focus:border-cinnabar focus:ring-1 focus:ring-peach text-body-md text-on-surface">
+<option value="">Select Towns...</option>
+<option value="bukit_merah">Bukit Merah</option>
+<option value="tampines">Tampines</option>
+<option value="punggol">Punggol</option>
+<option value="jurong_east">Jurong East</option>
+</select>
+<div class="flex flex-wrap gap-2 mt-2">
+<span class="bg-salmon text-deep-burgundy px-3 py-1 rounded-full font-label-sm text-label-sm flex items-center gap-1">
+                            Bukit Merah
+                            <span class="material-symbols-outlined text-[14px] cursor-pointer hover:text-cinnabar">close</span>
+</span>
+<span class="bg-salmon text-deep-burgundy px-3 py-1 rounded-full font-label-sm text-label-sm flex items-center gap-1">
+                            Tampines
+                            <span class="material-symbols-outlined text-[14px] cursor-pointer hover:text-cinnabar">close</span>
+</span>
+</div>
+</div>
+<!-- Flat Type -->
+<div class="flex flex-col gap-sm">
+<label class="font-label-lg text-label-lg text-on-surface">Flat Type</label>
+<div class="flex flex-wrap gap-2">
+<button class="border border-outline-variant text-on-surface-variant px-3 py-1 rounded-full font-label-sm text-label-sm hover:border-cinnabar hover:text-cinnabar transition-colors">3 ROOM</button>
+<button class="bg-cinnabar text-white px-3 py-1 rounded-full font-label-sm text-label-sm">4 ROOM</button>
+<button class="bg-cinnabar text-white px-3 py-1 rounded-full font-label-sm text-label-sm">5 ROOM</button>
+<button class="border border-outline-variant text-on-surface-variant px-3 py-1 rounded-full font-label-sm text-label-sm hover:border-cinnabar hover:text-cinnabar transition-colors">EXECUTIVE</button>
+</div>
+</div>
+<!-- Thresholds -->
+<div class="flex flex-col gap-md">
+<div class="flex flex-col gap-xs">
+<label class="font-label-lg text-label-lg text-on-surface flex justify-between">
+<span class="">Min. Floor Area</span>
+<span class="text-cinnabar">90 sqm</span>
+</label>
+<input class="w-full accent-cinnabar" max="150" min="50" type="range" value="90">
+</div>
+<div class="flex flex-col gap-xs">
+<label class="font-label-lg text-label-lg text-on-surface flex justify-between">
+<span class="">Min. Remaining Lease</span>
+<span class="text-cinnabar">70 years</span>
+</label>
+<input class="w-full accent-cinnabar" max="99" min="40" type="range" value="70">
+</div>
+</div>
+</div><section class="bg-white rounded-xl border border-deep-burgundy/10 p-lg shadow-sm flex flex-col gap-md"><div class="flex justify-between items-center border-b border-surface-container pb-sm"><h2 class="font-title-md text-title-md text-deep-burgundy flex items-center gap-sm"><span class="material-symbols-outlined text-cinnabar text-[20px]">map</span> Priority Destinations</h2><button class="font-label-sm text-label-sm text-cinnabar hover:underline flex items-center gap-xs"><span class="material-symbols-outlined text-[16px]">add</span> Add</button></div><ul class="space-y-sm"><li class="flex items-center justify-between p-sm hover:bg-surface-container transition-colors rounded-lg"><div class="flex items-center gap-md"><div class="w-8 h-8 rounded-full bg-peach flex items-center justify-center text-deep-burgundy"><span class="material-symbols-outlined text-[18px]">work</span></div><div><p class="font-label-lg text-label-lg text-on-surface">Work</p><p class="font-body-sm text-body-sm text-on-surface-variant">Raffles Place</p></div></div><button class="material-symbols-outlined text-outline-variant hover:text-error transition-colors">delete</button></li><li class="flex items-center justify-between p-sm hover:bg-surface-container transition-colors rounded-lg"><div class="flex items-center gap-md"><div class="w-8 h-8 rounded-full bg-peach flex items-center justify-center text-deep-burgundy"><span class="material-symbols-outlined text-[18px]">school</span></div><div><p class="font-label-lg text-label-lg text-on-surface">School</p><p class="font-body-sm text-body-sm text-on-surface-variant">Clementi</p></div></div><button class="material-symbols-outlined text-outline-variant hover:text-error transition-colors">delete</button></li></ul></section>
+</aside>
+<!-- Main Workspace: Suitability Weightings & Results -->
+<section class="w-full md:w-2/3 flex flex-col gap-lg">
+<!-- Suitability Weightings Panel (Bento/Glassmorphism feel) -->
+<div class="bg-surface-warm/90 backdrop-blur-md p-lg md:p-xl rounded-2xl border border-deep-burgundy/10 shadow-[0_8px_24px_rgba(70,18,32,0.08)]">
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-lg gap-md">
+<div>
+<h2 class="font-headline-md text-headline-md text-deep-burgundy flex items-center gap-sm">
+<span class="material-symbols-outlined text-cinnabar" data-weight="fill">balance</span>
+                            Suitability Weightings
+                        </h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Adjust criteria importance (0-5) to recalculate your FamPlan Score on the fly.</p>
+</div>
+<button class="bg-transparent border border-deep-burgundy text-deep-burgundy hover:bg-surface-dim font-label-lg text-label-lg py-2 px-4 rounded transition-colors whitespace-nowrap">
+                        Save as New Preference
+                    </button>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-md">
+<!-- Weight Item 1 -->
+<div class="bg-white p-md rounded-xl border border-surface-container flex flex-col gap-sm">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 rounded-full bg-peach flex items-center justify-center">
+<span class="material-symbols-outlined text-deep-burgundy text-[18px]">school</span>
+</div>
+<span class="font-label-lg text-label-lg text-on-surface">Proximity to Schools</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Weight</span>
+<span class="font-title-lg text-title-lg text-cinnabar">4</span>
+</div>
+<input class="w-full accent-cinnabar mt-2" max="5" min="0" type="range" value="4">
+</div>
+<!-- Weight Item 2 -->
+<div class="bg-white p-md rounded-xl border border-surface-container flex flex-col gap-sm">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 rounded-full bg-peach flex items-center justify-center">
+<span class="material-symbols-outlined text-deep-burgundy text-[18px]">train</span>
+</div>
+<span class="font-label-lg text-label-lg text-on-surface">Commute Distance</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Weight</span>
+<span class="font-title-lg text-title-lg text-cinnabar">5</span>
+</div>
+<input class="w-full accent-cinnabar mt-2" max="5" min="0" type="range" value="5">
+</div>
+<!-- Weight Item 3 -->
+<div class="bg-white p-md rounded-xl border border-surface-container flex flex-col gap-sm">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 rounded-full bg-peach flex items-center justify-center">
+<span class="material-symbols-outlined text-deep-burgundy text-[18px]">payments</span>
+</div>
+<span class="font-label-lg text-label-lg text-on-surface">Affordability</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Weight</span>
+<span class="font-title-lg text-title-lg text-cinnabar">3</span>
+</div>
+<input class="w-full accent-cinnabar mt-2" max="5" min="0" type="range" value="3">
+</div>
+<!-- Weight Item 4: Remaining Lease -->
+<div class="bg-white p-md rounded-xl border border-surface-container flex flex-col gap-sm">
+    <div class="flex items-center gap-sm">
+        <div class="w-8 h-8 rounded-full bg-peach flex items-center justify-center">
+            <span class="material-symbols-outlined text-deep-burgundy text-[18px]">history</span>
+        </div>
+        <span class="font-label-lg text-label-lg text-on-surface">Remaining Lease</span>
+    </div>
+    <div class="flex justify-between items-center">
+        <span class="font-body-sm text-body-sm text-on-surface-variant">Weight</span>
+        <span class="font-title-lg text-title-lg text-cinnabar">3</span>
+    </div>
+    <input class="w-full accent-cinnabar mt-2" max="5" min="0" type="range" value="3">
+</div>
+<!-- Weight Item 5: Public Transport -->
+<div class="bg-white p-md rounded-xl border border-surface-container flex flex-col gap-sm">
+    <div class="flex items-center gap-sm">
+        <div class="w-8 h-8 rounded-full bg-peach flex items-center justify-center">
+            <span class="material-symbols-outlined text-deep-burgundy text-[18px]">directions_bus</span>
+        </div>
+        <span class="font-label-lg text-label-lg text-on-surface">Public Transport</span>
+    </div>
+    <div class="flex justify-between items-center">
+        <span class="font-body-sm text-body-sm text-on-surface-variant">Weight</span>
+        <span class="font-title-lg text-title-lg text-cinnabar">4</span>
+    </div>
+    <input class="w-full accent-cinnabar mt-2" max="5" min="0" type="range" value="4">
+</div>
+<!-- Weight Item 6: Amenities -->
+<div class="bg-white p-md rounded-xl border border-surface-container flex flex-col gap-sm">
+    <div class="flex items-center gap-sm">
+        <div class="w-8 h-8 rounded-full bg-peach flex items-center justify-center">
+            <span class="material-symbols-outlined text-deep-burgundy text-[18px]">storefront</span>
+        </div>
+        <span class="font-label-lg text-label-lg text-on-surface">Amenities</span>
+    </div>
+    <div class="flex justify-between items-center">
+        <span class="font-body-sm text-body-sm text-on-surface-variant">Weight</span>
+        <span class="font-title-lg text-title-lg text-cinnabar">2</span>
+    </div>
+    <input class="w-full accent-cinnabar mt-2" max="5" min="0" type="range" value="2">
+</div>
+<!-- Weight Item 7: Accessibility -->
+<div class="bg-white p-md rounded-xl border border-surface-container flex flex-col gap-sm">
+    <div class="flex items-center gap-sm">
+        <div class="w-8 h-8 rounded-full bg-peach flex items-center justify-center">
+            <span class="material-symbols-outlined text-deep-burgundy text-[18px]">accessible</span>
+        </div>
+        <span class="font-label-lg text-label-lg text-on-surface">Accessibility</span>
+    </div>
+    <div class="flex justify-between items-center">
+        <span class="font-body-sm text-body-sm text-on-surface-variant">Weight</span>
+        <span class="font-title-lg text-title-lg text-cinnabar">3</span>
+    </div>
+    <input class="w-full accent-cinnabar mt-2" max="5" min="0" type="range" value="3">
+</div></div>
+</div><section class="bg-white rounded-xl border border-deep-burgundy/10 p-lg shadow-sm flex flex-col gap-md"><div class="flex justify-between items-center border-b border-surface-container pb-sm"><h2 class="font-title-md text-title-md text-deep-burgundy flex items-center gap-sm"><span class="material-symbols-outlined text-cinnabar text-[20px]">child_care</span> Child Profiles</h2><label class="relative inline-flex items-center cursor-pointer"><input checked="" class="sr-only peer" type="checkbox" value=""><div class="w-9 h-5 bg-outline-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-outline after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cinnabar"></div></label></div><div class="bg-surface-container-low rounded-lg p-md border border-surface-container"><div class="grid grid-cols-2 gap-md mb-sm"><div><label class="block font-label-sm text-label-sm text-on-surface-variant mb-xs">Name</label><input class="w-full bg-white border border-outline-variant rounded-md px-sm py-xs font-body-md text-body-md focus:border-cinnabar focus:ring-1 focus:ring-cinnabar outline-none" type="text" value="Emma"></div><div><label class="block font-label-sm text-label-sm text-on-surface-variant mb-xs">Age</label><input class="w-full bg-white border border-outline-variant rounded-md px-sm py-xs font-body-md text-body-md focus:border-cinnabar focus:ring-1 focus:ring-cinnabar outline-none" type="number" value="8"></div></div><div><label class="block font-label-sm text-label-sm text-on-surface-variant mb-xs">Interests / CCAs</label><input class="w-full bg-white border border-outline-variant rounded-md px-sm py-xs font-body-md text-body-md focus:border-cinnabar focus:ring-1 focus:ring-cinnabar outline-none" placeholder="e.g. Swimming, Piano" type="text" value="Swimming"></div></div><button class="mt-sm w-full border border-cinnabar text-cinnabar font-label-sm text-label-sm py-2 rounded-lg hover:bg-surface-container transition-colors flex justify-center items-center gap-xs"><span class="material-symbols-outlined text-[18px]">add</span> Add Another Child</button></section>
+<!-- Action Area -->
+<div class="flex justify-end mt-md">
+<button class="bg-cinnabar text-white font-label-lg text-label-lg py-3 px-8 rounded-lg shadow-sm hover:bg-secondary hover:shadow-md transition-all flex items-center gap-sm">
+                    Show 142 Results
+                    <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+</button>
+</div>
+</section>
+</main>
+
+
+</body></html>

@@ -1,0 +1,265 @@
+<!DOCTYPE html><html class="h-full" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>FamPlan - Authentication</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-background": "#40000c",
+                      "tertiary-container": "#381f12",
+                      "surface-bright": "#fff8f7",
+                      "surface-warm": "#fffcfb",
+                      "on-primary-fixed-variant": "#703341",
+                      "tertiary": "#1f0a02",
+                      "secondary-fixed-dim": "#ffb3b5",
+                      "on-primary": "#ffffff",
+                      "on-tertiary": "#ffffff",
+                      "on-tertiary-fixed": "#2d1509",
+                      "surface-variant": "#ffdada",
+                      "salmon": "#fcb9b2",
+                      "on-secondary-container": "#73061e",
+                      "on-error": "#ffffff",
+                      "secondary": "#a93342",
+                      "on-surface-variant": "#524345",
+                      "error": "#ba1a1a",
+                      "surface-container-lowest": "#ffffff",
+                      "surface": "#fff8f7",
+                      "outline-variant": "#d7c1c4",
+                      "secondary-fixed": "#ffdada",
+                      "on-surface": "#40000c",
+                      "primary-fixed": "#ffd9de",
+                      "on-error-container": "#93000a",
+                      "on-secondary": "#ffffff",
+                      "primary-container": "#461220",
+                      "background": "#fff8f7",
+                      "peach": "#fed0bb",
+                      "primary": "#2a000c",
+                      "surface-container-highest": "#ffdada",
+                      "surface-container": "#ffe9e9",
+                      "surface-container-low": "#fff0f0",
+                      "on-primary-container": "#c17785",
+                      "cinnabar": "#b23a48",
+                      "tertiary-fixed-dim": "#e9bda9",
+                      "on-primary-fixed": "#3a0817",
+                      "inverse-surface": "#620e1c",
+                      "secondary-container": "#ff7480",
+                      "surface-dim": "#ffcecf",
+                      "tertiary-fixed": "#ffdbcb",
+                      "on-tertiary-fixed-variant": "#5f4030",
+                      "deep-burgundy": "#461220",
+                      "surface-container-high": "#ffe1e1",
+                      "primary-fixed-dim": "#ffb2bf",
+                      "inverse-on-surface": "#ffedec",
+                      "on-secondary-fixed-variant": "#891a2c",
+                      "on-tertiary-container": "#ab8471",
+                      "inverse-primary": "#ffb2bf",
+                      "on-secondary-fixed": "#40000c",
+                      "outline": "#857375",
+                      "surface-tint": "#8c4a58",
+                      "error-container": "#ffdad6"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "xs": "4px",
+                      "sm": "8px",
+                      "base": "4px",
+                      "margin-mobile": "16px",
+                      "xl": "32px",
+                      "margin-desktop": "64px",
+                      "md": "16px",
+                      "gutter": "24px",
+                      "lg": "24px"
+              },
+              "fontFamily": {
+                      "title-md": ["Public Sans"],
+                      "label-md": ["Public Sans"],
+                      "body-sm": ["Public Sans"],
+                      "display-lg": ["Public Sans"],
+                      "title-lg": ["Public Sans"],
+                      "label-sm": ["Public Sans"],
+                      "headline-lg": ["Public Sans"],
+                      "body-lg": ["Public Sans"],
+                      "body-md": ["Public Sans"],
+                      "headline-lg-mobile": ["Public Sans"],
+                      "headline-md": ["Public Sans"],
+                      "label-lg": ["Public Sans"]
+              },
+              "fontSize": {
+                      "title-md": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                      "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                      "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "title-lg": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "label-sm": ["11px", {"lineHeight": "16px", "fontWeight": "500"}],
+                      "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                      "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                      "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                      "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "label-lg": ["14px", {"lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "600"}]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+        .auth-transition {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .form-enter {
+            opacity: 0;
+            transform: translateY(10px) scale(0.98);
+        }
+        .form-enter-active {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    </style>
+</head>
+<body class="h-full bg-surface-warm text-on-surface antialiased flex flex-col items-center justify-center p-margin-mobile md:p-margin-desktop">
+<!-- Main Authentication Container -->
+<main class="w-full max-w-[480px] bg-white rounded-xl shadow-lg border border-outline-variant relative overflow-hidden flex flex-col" style="min-height: 600px;">
+<!-- Header / Brand Area -->
+<div class="px-xl pt-xl pb-md text-center bg-peach bg-opacity-20 relative">
+<!-- Top decoration -->
+<div class="absolute top-0 left-0 right-0 h-1 bg-cinnabar"></div>
+<h1 class="text-headline-md font-headline-md text-cinnabar flex items-center justify-center gap-sm">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">assured_workload</span>
+                FamPlan
+            </h1>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-sm" id="auth-subtitle">Sign in to access your dashboard</p>
+</div>
+<!-- Tab Navigation -->
+<div class="flex border-b border-outline-variant mx-xl mt-md relative">
+<button class="flex-1 pb-sm text-label-lg font-label-lg text-deep-burgundy border-b-2 border-cinnabar transition-colors" id="tab-signin" onclick="switchTab('signin')">Sign In</button>
+<button class="flex-1 pb-sm text-label-lg font-label-lg text-on-surface-variant border-b-2 border-transparent hover:text-deep-burgundy transition-colors" id="tab-register" onclick="switchTab('register')">Create Account</button>
+</div>
+<!-- Forms Container -->
+<div class="p-xl flex-1 relative overflow-y-auto">
+<!-- Sign In Form -->
+<form class="flex flex-col gap-lg auth-transition form-enter-active absolute inset-0 p-xl bg-white z-10" id="form-signin">
+<div class="flex flex-col gap-xs">
+<label class="text-label-lg font-label-lg text-on-surface" for="signin-email">Email Address</label>
+<input class="w-full rounded-DEFAULT border-outline-variant bg-white px-md py-sm text-body-md focus:border-cinnabar focus:ring-1 focus:ring-cinnabar outline-none transition-all placeholder:text-outline" id="signin-email" placeholder="Enter your email" required="" type="email">
+</div>
+<div class="flex flex-col gap-xs">
+<div class="flex justify-between items-center">
+<label class="text-label-lg font-label-lg text-on-surface" for="signin-password">Password</label>
+<a class="text-label-sm font-label-sm text-cinnabar hover:underline" href="#">Forgot Password?</a>
+</div>
+<div class="relative">
+<input class="w-full rounded-DEFAULT border-outline-variant bg-white px-md py-sm pr-xl text-body-md focus:border-cinnabar focus:ring-1 focus:ring-cinnabar outline-none transition-all" id="signin-password" placeholder="••••••••" required="" type="password">
+<button class="absolute right-sm top-1/2 -translate-y-1/2 text-outline hover:text-deep-burgundy p-xs rounded-full focus:outline-none" type="button">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+</button>
+</div>
+</div>
+<button class="w-full bg-cinnabar hover:bg-secondary text-white rounded-DEFAULT py-sm text-label-lg font-label-lg transition-colors mt-sm flex items-center justify-center gap-xs" type="submit">
+                    Sign In
+                    <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button><div class="flex items-center gap-sm my-sm"><div class="flex-1 h-px bg-surface-variant"></div><span class="text-label-sm text-on-surface-variant">or</span><div class="flex-1 h-px bg-surface-variant"></div></div><button class="w-full bg-white border border-cinnabar text-cinnabar rounded-DEFAULT py-sm text-label-lg font-label-lg transition-colors flex items-center justify-center gap-xs hover:bg-surface-container-low" type="button"><span class="material-symbols-outlined text-[20px]">shield</span>Log in with Singpass</button>
+<div class="mt-auto pt-lg border-t border-surface-variant flex items-center justify-center gap-xs text-body-sm font-body-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px] text-primary">security</span>
+                    Secure Government Portal
+                </div>
+</form>
+<!-- Registration Form -->
+<form class="flex flex-col gap-lg auth-transition opacity-0 pointer-events-none translate-y-4 absolute inset-0 p-xl bg-white z-0" id="form-register">
+<div class="flex flex-col gap-xs">
+<label class="text-label-lg font-label-lg text-on-surface" for="register-name">Full Name</label>
+<input class="w-full rounded-DEFAULT border-outline-variant bg-white px-md py-sm text-body-md focus:border-cinnabar focus:ring-1 focus:ring-cinnabar outline-none transition-all placeholder:text-outline" id="register-name" placeholder="As per NRIC" required="" type="text">
+</div>
+<div class="flex flex-col gap-xs">
+<label class="text-label-lg font-label-lg text-on-surface" for="register-email">Email Address</label>
+<input class="w-full rounded-DEFAULT border-outline-variant bg-white px-md py-sm text-body-md focus:border-cinnabar focus:ring-1 focus:ring-cinnabar outline-none transition-all placeholder:text-outline" id="register-email" placeholder="Enter your email" required="" type="email">
+</div>
+<div class="flex flex-col gap-xs">
+<label class="text-label-lg font-label-lg text-on-surface" for="register-password">Create Password</label>
+<input class="w-full rounded-DEFAULT border-outline-variant bg-white px-md py-sm text-body-md focus:border-cinnabar focus:ring-1 focus:ring-cinnabar outline-none transition-all" id="register-password" placeholder="At least 8 characters" required="" type="password">
+</div>
+<div class="flex items-start gap-sm mt-xs">
+<div class="pt-1">
+<input class="rounded-sm border-outline text-cinnabar focus:ring-cinnabar h-4 w-4" id="register-consent" required="" type="checkbox">
+</div>
+<label class="text-body-sm font-body-sm text-on-surface-variant cursor-pointer" for="register-consent">
+                        I agree to the <a class="text-cinnabar hover:underline" href="#">Terms of Service</a> and explicitly consent to the <a class="text-cinnabar hover:underline" href="#">Privacy &amp; Data Policy</a> for processing my information.
+                    </label>
+</div>
+<button class="w-full bg-cinnabar hover:bg-secondary text-white rounded-DEFAULT py-sm text-label-lg font-label-lg transition-colors mt-sm flex items-center justify-center gap-xs" type="submit">
+                    Create Account
+                    <span class="material-symbols-outlined text-[18px]">person_add</span>
+</button>
+</form>
+</div>
+</main>
+<script>
+        function switchTab(tab) {
+            const signinForm = document.getElementById('form-signin');
+            const registerForm = document.getElementById('form-register');
+            const tabSignin = document.getElementById('tab-signin');
+            const tabRegister = document.getElementById('tab-register');
+            const subtitle = document.getElementById('auth-subtitle');
+
+            if (tab === 'signin') {
+                // UI Tab styling
+                tabSignin.classList.add('text-deep-burgundy', 'border-cinnabar');
+                tabSignin.classList.remove('text-on-surface-variant', 'border-transparent');
+                tabRegister.classList.add('text-on-surface-variant', 'border-transparent');
+                tabRegister.classList.remove('text-deep-burgundy', 'border-cinnabar');
+                
+                // Content update
+                subtitle.textContent = "Sign in to access your dashboard";
+
+                // Form transition (z-index trickery for absolute positioning)
+                signinForm.style.opacity = '1';
+                signinForm.style.transform = 'translateY(0)';
+                signinForm.style.pointerEvents = 'auto';
+                signinForm.style.zIndex = '10';
+
+                registerForm.style.opacity = '0';
+                registerForm.style.transform = 'translateY(16px)';
+                registerForm.style.pointerEvents = 'none';
+                registerForm.style.zIndex = '0';
+
+            } else {
+                // UI Tab styling
+                tabRegister.classList.add('text-deep-burgundy', 'border-cinnabar');
+                tabRegister.classList.remove('text-on-surface-variant', 'border-transparent');
+                tabSignin.classList.add('text-on-surface-variant', 'border-transparent');
+                tabSignin.classList.remove('text-deep-burgundy', 'border-cinnabar');
+
+                // Content update
+                subtitle.textContent = "Register to begin your application";
+
+                // Form transition
+                registerForm.style.opacity = '1';
+                registerForm.style.transform = 'translateY(0)';
+                registerForm.style.pointerEvents = 'auto';
+                registerForm.style.zIndex = '10';
+
+                signinForm.style.opacity = '0';
+                signinForm.style.transform = 'translateY(-16px)';
+                signinForm.style.pointerEvents = 'none';
+                signinForm.style.zIndex = '0';
+            }
+        }
+    </script>
+
+
+
+
+
+
+</body></html>

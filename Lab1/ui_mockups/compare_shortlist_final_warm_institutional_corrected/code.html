@@ -1,0 +1,627 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>FamPlan - Compare Shortlist</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Design System Configuration -->
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "surface-variant": "#ffdada",
+                "secondary": "#a93342",
+                "inverse-on-surface": "#ffedec",
+                "surface-container-lowest": "#ffffff",
+                "secondary-container": "#ff7480",
+                "on-tertiary": "#ffffff",
+                "background": "#fff8f7",
+                "surface-container": "#ffe9e9",
+                "tertiary-container": "#381f12",
+                "surface-warm": "#fffcfb",
+                "peach": "#fed0bb",
+                "on-primary": "#ffffff",
+                "primary": "#2a000c",
+                "secondary-fixed-dim": "#ffb3b5",
+                "error-container": "#ffdad6",
+                "inverse-surface": "#620e1c",
+                "surface-bright": "#fff8f7",
+                "outline-variant": "#d7c1c4",
+                "on-error": "#ffffff",
+                "on-tertiary-container": "#ab8471",
+                "on-primary-container": "#c17785",
+                "surface-container-high": "#ffe1e1",
+                "surface-container-low": "#fff0f0",
+                "surface": "#fff8f7",
+                "on-surface": "#40000c",
+                "tertiary": "#1f0a02",
+                "inverse-primary": "#ffb2bf",
+                "error": "#ba1a1a",
+                "secondary-fixed": "#ffdada",
+                "on-tertiary-fixed-variant": "#5f4030",
+                "salmon": "#fcb9b2",
+                "primary-container": "#461220",
+                "cinnabar": "#b23a48",
+                "primary-fixed-dim": "#ffb2bf",
+                "surface-tint": "#8c4a58",
+                "on-primary-fixed": "#3a0817",
+                "on-error-container": "#93000a",
+                "primary-fixed": "#ffd9de",
+                "deep-burgundy": "#461220",
+                "on-primary-fixed-variant": "#703341",
+                "on-secondary": "#ffffff",
+                "on-background": "#40000c",
+                "outline": "#857375",
+                "on-secondary-fixed-variant": "#891a2c",
+                "tertiary-fixed": "#ffdbcb",
+                "surface-container-highest": "#ffdada",
+                "on-tertiary-fixed": "#2d1509",
+                "surface-dim": "#ffcecf",
+                "tertiary-fixed-dim": "#e9bda9",
+                "on-secondary-fixed": "#40000c",
+                "on-surface-variant": "#524345",
+                "on-secondary-container": "#73061e"
+        },
+        "borderRadius": {
+                "DEFAULT": "0.125rem",
+                "lg": "0.25rem",
+                "xl": "0.5rem",
+                "full": "0.75rem"
+        },
+        "spacing": {
+                "base": "4px",
+                "xl": "32px",
+                "xs": "4px",
+                "sm": "8px",
+                "md": "16px",
+                "margin-mobile": "16px",
+                "gutter": "24px",
+                "margin-desktop": "64px",
+                "lg": "24px"
+        },
+        "fontFamily": {
+                "label-lg": [
+                        "Public Sans"
+                ],
+                "headline-md": [
+                        "Public Sans"
+                ],
+                "body-lg": [
+                        "Public Sans"
+                ],
+                "title-lg": [
+                        "Public Sans"
+                ],
+                "display-lg": [
+                        "Public Sans"
+                ],
+                "body-md": [
+                        "Public Sans"
+                ],
+                "label-md": [
+                        "Public Sans"
+                ],
+                "label-sm": [
+                        "Public Sans"
+                ],
+                "headline-lg-mobile": [
+                        "Public Sans"
+                ],
+                "title-md": [
+                        "Public Sans"
+                ],
+                "headline-lg": [
+                        "Public Sans"
+                ],
+                "body-sm": [
+                        "Public Sans"
+                ]
+        },
+        "fontSize": {
+                "label-lg": [
+                        "14px",
+                        {
+                                "lineHeight": "20px",
+                                "letterSpacing": "0.02em",
+                                "fontWeight": "600"
+                        }
+                ],
+                "headline-md": [
+                        "24px",
+                        {
+                                "lineHeight": "32px",
+                                "fontWeight": "600"
+                        }
+                ],
+                "body-lg": [
+                        "18px",
+                        {
+                                "lineHeight": "28px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "title-lg": [
+                        "20px",
+                        {
+                                "lineHeight": "28px",
+                                "fontWeight": "600"
+                        }
+                ],
+                "display-lg": [
+                        "48px",
+                        {
+                                "lineHeight": "56px",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "700"
+                        }
+                ],
+                "body-md": [
+                        "16px",
+                        {
+                                "lineHeight": "24px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "label-md": [
+                        "12px",
+                        {
+                                "lineHeight": "16px",
+                                "letterSpacing": "0.01em",
+                                "fontWeight": "600"
+                        }
+                ],
+                "label-sm": [
+                        "11px",
+                        {
+                                "lineHeight": "16px",
+                                "fontWeight": "500"
+                        }
+                ],
+                "headline-lg-mobile": [
+                        "28px",
+                        {
+                                "lineHeight": "36px",
+                                "fontWeight": "700"
+                        }
+                ],
+                "title-md": [
+                        "18px",
+                        {
+                                "lineHeight": "24px",
+                                "fontWeight": "600"
+                        }
+                ],
+                "headline-lg": [
+                        "32px",
+                        {
+                                "lineHeight": "40px",
+                                "letterSpacing": "-0.01em",
+                                "fontWeight": "700"
+                        }
+                ],
+                "body-sm": [
+                        "14px",
+                        {
+                                "lineHeight": "20px",
+                                "fontWeight": "400"
+                        }
+                ]
+        }
+},
+    },
+  }
+</script>
+<style>
+        @import url('https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap');
+        body { font-family: 'Public Sans', sans-serif; }
+        
+        /* Custom scrollbar for the comparison grid */
+        .compare-scroll::-webkit-scrollbar {
+            height: 8px;
+        }
+        .compare-scroll::-webkit-scrollbar-track {
+            background: theme('colors.surface-container');
+            border-radius: theme('borderRadius.full');
+        }
+        .compare-scroll::-webkit-scrollbar-thumb {
+            background: theme('colors.outline-variant');
+            border-radius: theme('borderRadius.full');
+        }
+        .compare-scroll::-webkit-scrollbar-thumb:hover {
+            background: theme('colors.outline');
+        }
+
+        /* Hide scrollbar for cleanly designed internal lists */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface antialiased min-h-screen flex flex-col">
+<!-- TopNavBar (Shared Component) -->
+<nav class="hidden md:flex sticky top-0 w-full z-50 justify-between items-center px-margin-desktop py-4 bg-surface dark:bg-inverse-surface border-b border-outline-variant dark:border-outline">
+<div class="flex items-center gap-8">
+<!-- Brand -->
+<a class="text-headline-md font-headline-md font-bold text-primary-container dark:text-tertiary-fixed" href="#">
+                FamPlan
+            </a>
+<!-- Links -->
+<div class="flex items-center gap-6">
+<a class="text-label-md font-label-md text-on-surface-variant dark:text-surface-variant hover:text-primary-container transition-colors duration-200" href="#">
+                    Explore
+                </a>
+<a class="text-label-md font-label-md text-primary-container font-bold border-b-2 border-primary-container pb-1 hover:text-primary-container transition-colors duration-200" href="#">
+                    Shortlist
+                </a>
+<a class="text-label-md font-label-md text-on-surface-variant dark:text-surface-variant hover:text-primary-container transition-colors duration-200" href="#">
+                    Eligibility
+                </a>
+</div>
+</div>
+<!-- Actions -->
+<div class="flex items-center gap-4">
+<!-- Icon Actions -->
+<button class="text-on-surface-variant hover:text-primary-container transition-colors duration-200 flex items-center justify-center p-2 rounded-full hover:bg-surface-container">
+<span class="material-symbols-outlined">favorite</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary-container transition-colors duration-200 flex items-center justify-center p-2 rounded-full hover:bg-surface-container">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+<!-- Secondary Action -->
+<button class="text-label-md font-label-md text-primary-container border border-outline-variant rounded-full px-6 py-2 hover:bg-surface-container transition-colors">
+                Compare
+            </button>
+<!-- Primary Action -->
+<button class="text-label-md font-label-md bg-primary-container text-on-primary rounded-full px-6 py-2 hover:bg-primary-container/90 transition-colors">
+                Sign In
+            </button>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-grow w-full max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop pt-8 pb-24 md:pb-16 flex flex-col gap-6">
+<!-- Page Header -->
+<header class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 w-full">
+<div>
+<div class="flex items-center gap-2 text-label-md font-label-md text-on-surface-variant mb-2">
+<span class="material-symbols-outlined text-[18px]">arrow_back</span>
+<a class="hover:underline hover:text-primary-container" href="#">Back to List</a>
+</div>
+<h1 class="text-headline-lg-mobile md:text-display-lg font-headline-lg-mobile md:font-display-lg text-primary-container">
+                    Compare Shortlist
+                </h1>
+<p class="text-body-md font-body-md text-on-surface-variant mt-2 max-w-2xl">
+                    Evaluating your top 3 choices. Metrics are calculated based on your profile's budget and workplace location.
+                </p>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 px-4 py-2 rounded-full border border-outline-variant text-primary-container text-label-md font-label-md hover:bg-surface-container transition-colors bg-surface-container-lowest">
+<span class="material-symbols-outlined text-[18px]">share</span>
+                    Share
+                </button>
+<button class="flex items-center gap-2 px-4 py-2 rounded-full bg-primary-container text-on-primary text-label-md font-label-md hover:bg-primary-container/90 transition-colors">
+<span class="material-symbols-outlined text-[18px]">edit_note</span>
+                    Edit Priorities
+                </button>
+</div>
+</header>
+<!-- High-Density Comparison Grid Area -->
+<div class="w-full relative bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden flex flex-col">
+<!-- Horizontal Scroll Wrapper for Data Density -->
+<div class="w-full overflow-x-auto compare-scroll pb-4">
+<!-- Grid Structure: 1 Label Column (sticky left optionally), 3 Data Columns -->
+<div class="min-w-[800px] md:min-w-full grid grid-cols-[200px_repeat(3,minmax(280px,1fr))] relative">
+<!-- 1. Header Row (Sticky Top) -->
+<div class="col-span-full grid grid-cols-subgrid sticky top-0 z-20 bg-surface-container-lowest border-b border-outline-variant shadow-[0_4px_12px_rgba(0,0,0,0.03)] pb-4 pt-6">
+<!-- Corner Empty / Legend cell -->
+<div class="px-6 flex flex-col justify-end pb-4">
+<span class="text-label-sm font-label-sm text-outline uppercase tracking-wider">Properties</span>
+</div>
+<!-- Property 1 -->
+<div class="px-4 border-l border-outline-variant/30 flex flex-col gap-3 group">
+<div class="relative w-full h-32 rounded-xl overflow-hidden bg-surface-container group-hover:shadow-md transition-shadow">
+<img class="w-full h-full object-cover" data-alt="A bright, modern HDB flat exterior in Singapore during daytime, photographed with a high-end architectural lens. The building features clean lines, a mix of white and subtle gray facades, and lush green landscaping at the ground level. The lighting is sunny and optimistic, reflecting a premium, well-maintained public housing estate in a light-mode UI context." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA2aI4uGHPLlOyc_PqDIwakR6eKDntypOCiTBdXu1usq3vYeS22hgr49DPLY1bWGdLshYSQhzhvYzq2lTLz-AoK4AuRuyo3umy1hM76si-UrGU0UpWZOQYhtEWfqPaEdmpFaIgNRt0f4wuLiM4Kx3_cJ0hsF2y2T4RLLcq4kU6MaM-P0FU-gA-98sboeWKp4UJoWpQjGEJemWuW_BJ33IWDx0HzMXF5L9EKm9AJvRJHvQ1gzYcTrAHCfQ">
+<button class="absolute top-2 right-2 bg-surface-container-lowest/80 backdrop-blur text-outline hover:text-primary-container rounded-full p-1.5 transition-colors">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">close</span>
+</button>
+<div class="absolute bottom-2 left-2 bg-surface-container-lowest/90 backdrop-blur px-2 py-1 rounded-md text-label-sm font-label-sm text-primary-container border border-outline-variant/50">
+                                    4-Room
+                                </div>
+</div>
+<div>
+<h3 class="text-title-lg font-title-lg text-primary-container leading-tight truncate">Blk 212A Bishan St 23</h3>
+<p class="text-headline-md font-headline-md text-primary-container mt-1">$680,000</p>
+<p class="text-label-sm font-label-sm text-on-surface-variant">Estimated Cash Cash: $45k</p>
+</div>
+</div>
+<!-- Property 2 -->
+<div class="px-4 border-l border-outline-variant/30 flex flex-col gap-3 group">
+<div class="relative w-full h-32 rounded-xl overflow-hidden bg-surface-container group-hover:shadow-md transition-shadow">
+<img class="w-full h-full object-cover" data-alt="A sophisticated wide shot of a high-floor HDB flat living room in Singapore, viewed through large windows showing a distant cityscape. The interior is minimally decorated with Scandinavian wood furniture, flooded with natural white daylight. The mood is aspirational and organized, fitting a premium real estate platform's light-mode aesthetic, utilizing bright whites and deep navy contrasts." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAlXAZO8WZqH7l76O0diNXqemEMnG0eNg8W8ab-tw-HxVvRhOzdMNp0XxT8gd3hnLf84Q1u2hf4gSoRnjIm4t0UnQrZijYNgVpt8iW5i3My7DMVCUop9w0AeIxGVpsJtTLVXvHAfhcMdFrx-m_zxRK84yd0z284-e1Lk1IimzzoKKBCKIxr0S1ndvWH_ZmXpUDEK-KQGkEWKUVBnycHX4eBSp1f68uZRpzifw1bluV15L5WPa-zeyL1gQ">
+<button class="absolute top-2 right-2 bg-surface-container-lowest/80 backdrop-blur text-outline hover:text-primary-container rounded-full p-1.5 transition-colors">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">close</span>
+</button>
+<div class="absolute bottom-2 left-2 bg-surface-container-lowest/90 backdrop-blur px-2 py-1 rounded-md text-label-sm font-label-sm text-primary-container border border-outline-variant/50">
+                                    5-Room
+                                </div>
+</div>
+<div>
+<h3 class="text-title-lg font-title-lg text-primary-container leading-tight truncate">Blk 188 Toa Payoh Lor 4</h3>
+<p class="text-headline-md font-headline-md text-primary-container mt-1">$850,000</p>
+<p class="text-label-sm font-label-sm text-on-surface-variant">Estimated Cash Cash: $90k</p>
+</div>
+</div>
+<!-- Property 3 -->
+<div class="px-4 border-l border-outline-variant/30 flex flex-col gap-3 group">
+<div class="relative w-full h-32 rounded-xl overflow-hidden bg-surface-container group-hover:shadow-md transition-shadow">
+<img class="w-full h-full object-cover" data-alt="An inviting community courtyard in a modern Singapore HDB estate, featuring covered walkways, manicured tropical greenery, and a subtle playground in the background. The lighting is soft morning light, creating a welcoming, safe, and family-oriented mood. The color palette leans on natural greens, warm greys, and crisp whites, harmonizing with a clean, institutional light-mode design system." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAWysumrCc08H4kVgnja01ObeoizAlq1UCUg0zpLfPYLIWdrzq8t5yv8NVESot2rMMrQD_kMQf_QEnaMQjBZiUDNBl7u2lZcBBm0sMTBcw3M-Hg3iFTp4-9aJwbmIVaQdUfKtXTq0MAKiS3zV2q6Q_VngReUda9I_bYjrJZL4FIFzMAsLw-0nm0Ag3RKtA72pLWhiEPyVyL3adIxmaZ52K2H5KXQuJuEgGDJBNwHp9rsiuCbEkE4RF_Ug">
+<button class="absolute top-2 right-2 bg-surface-container-lowest/80 backdrop-blur text-outline hover:text-primary-container rounded-full p-1.5 transition-colors">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">close</span>
+</button>
+<div class="absolute bottom-2 left-2 bg-surface-container-lowest/90 backdrop-blur px-2 py-1 rounded-md text-label-sm font-label-sm text-primary-container border border-outline-variant/50">
+                                    4-Room
+                                </div>
+</div>
+<div>
+<h3 class="text-title-lg font-title-lg text-primary-container leading-tight truncate">Blk 451 Ang Mo Kio Ave 10</h3>
+<p class="text-headline-md font-headline-md text-primary-container mt-1">$590,000</p>
+<p class="text-label-sm font-label-sm text-on-surface-variant">Estimated Cash Cash: $15k</p>
+</div>
+</div>
+</div>
+<!-- 2. Suitability Score Row (Bento-style visualization) -->
+<div class="col-span-full grid grid-cols-subgrid border-b border-outline-variant/50 py-6 items-start bg-tertiary-fixed/30">
+<div class="px-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-outline">radar</span>
+<span class="text-label-md font-label-md text-on-surface">Suitability Match</span>
+</div>
+<!-- Score 1 -->
+<div class="px-4 border-l border-outline-variant/30 flex flex-col gap-4">
+<div class="flex items-baseline gap-2">
+<span class="text-headline-lg font-headline-lg text-primary-container">92%</span>
+<span class="px-2 py-0.5 rounded-full bg-primary-container/10 text-primary-container text-[10px] font-bold uppercase tracking-wide">Excellent</span>
+</div>
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-center text-label-sm font-label-sm">
+<span class="text-on-surface-variant">Budget Fit</span>
+<span class="text-primary-container font-bold">95%</span>
+</div>
+<div class="w-full h-1.5 bg-surface-container rounded-full overflow-hidden"><div class="h-full bg-cinnabar w-[95%]"></div></div>
+<div class="flex justify-between items-center text-label-sm font-label-sm">
+<span class="text-on-surface-variant">Location Fit</span>
+<span class="text-primary-container font-bold">88%</span>
+</div>
+<div class="w-full h-1.5 bg-surface-container rounded-full overflow-hidden"><div class="h-full bg-cinnabar/80 w-[88%]"></div></div>
+</div>
+</div>
+<!-- Score 2 -->
+<div class="px-4 border-l border-outline-variant/30 flex flex-col gap-4">
+<div class="flex items-baseline gap-2">
+<span class="text-headline-lg font-headline-lg text-[#fb8500]">74%</span>
+<span class="px-2 py-0.5 rounded-full bg-[#fb8500]/10 text-[#fb8500] text-[10px] font-bold uppercase tracking-wide">Fair</span>
+</div>
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-center text-label-sm font-label-sm">
+<span class="text-on-surface-variant">Budget Fit</span>
+<span class="text-primary-container font-bold">50%</span>
+</div>
+<div class="w-full h-1.5 bg-surface-container rounded-full overflow-hidden"><div class="h-full bg-cinnabar w-[50%]"></div></div>
+<div class="flex justify-between items-center text-label-sm font-label-sm">
+<span class="text-on-surface-variant">Location Fit</span>
+<span class="text-primary-container font-bold">98%</span>
+</div>
+<div class="w-full h-1.5 bg-surface-container rounded-full overflow-hidden"><div class="h-full bg-cinnabar w-[98%]"></div></div>
+</div>
+</div>
+<!-- Score 3 -->
+<div class="px-4 border-l border-outline-variant/30 flex flex-col gap-4">
+<div class="flex items-baseline gap-2">
+<span class="text-headline-lg font-headline-lg text-primary-container">85%</span>
+<span class="px-2 py-0.5 rounded-full bg-primary-container/10 text-primary-container text-[10px] font-bold uppercase tracking-wide">Good</span>
+</div>
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-center text-label-sm font-label-sm">
+<span class="text-on-surface-variant">Budget Fit</span>
+<span class="text-primary-container font-bold">88%</span>
+</div>
+<div class="w-full h-1.5 bg-surface-container rounded-full overflow-hidden"><div class="h-full bg-cinnabar/80 w-[88%]"></div></div>
+<div class="flex justify-between items-center text-label-sm font-label-sm">
+<span class="text-on-surface-variant">Location Fit</span>
+<span class="text-primary-container font-bold">82%</span>
+</div>
+<div class="w-full h-1.5 bg-surface-container rounded-full overflow-hidden"><div class="h-full bg-cinnabar/60 w-[82%]"></div></div>
+</div>
+</div>
+</div>
+<!-- 3. Historical Median Price -->
+<div class="col-span-full grid grid-cols-subgrid border-b border-outline-variant/50 py-6 items-center hover:bg-surface-container-lowest/50 transition-colors">
+<div class="px-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-outline">monitoring</span>
+<span class="text-label-md font-label-md text-on-surface">Area Median Price</span>
+</div>
+<div class="px-4 border-l border-outline-variant/30 flex flex-col">
+<span class="text-body-lg font-body-lg text-primary-container">$665,000</span>
+<div class="flex items-center gap-1 text-label-sm font-label-sm text-primary-container mt-1">
+<span class="material-symbols-outlined text-[14px]">trending_up</span>
+                                +2.4% (Past Yr)
+                            </div>
+</div>
+<div class="px-4 border-l border-outline-variant/30 flex flex-col">
+<span class="text-body-lg font-body-lg text-primary-container">$840,000</span>
+<div class="flex items-center gap-1 text-label-sm font-label-sm text-primary-container mt-1">
+<span class="material-symbols-outlined text-[14px]">trending_up</span>
+                                +4.1% (Past Yr)
+                            </div>
+</div>
+<div class="px-4 border-l border-outline-variant/30 flex flex-col">
+<span class="text-body-lg font-body-lg text-primary-container">$580,000</span>
+<div class="flex items-center gap-1 text-label-sm font-label-sm text-outline mt-1">
+<span class="material-symbols-outlined text-[14px]">trending_flat</span>
+                                0.0% (Past Yr)
+                            </div>
+</div>
+</div>
+<!-- 4. Remaining Lease -->
+<div class="col-span-full grid grid-cols-subgrid border-b border-outline-variant/50 py-6 items-center hover:bg-surface-container-lowest/50 transition-colors">
+<div class="px-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-outline">hourglass_bottom</span>
+<span class="text-label-md font-label-md text-on-surface">Remaining Lease</span>
+</div>
+<div class="px-4 border-l border-outline-variant/30">
+<div class="flex justify-between text-body-md font-body-md text-primary-container mb-1">
+<span>65 Years</span>
+<span class="text-outline text-label-sm font-label-sm">from 1989</span>
+</div>
+<div class="w-full h-1 bg-surface-container rounded-full overflow-hidden"><div class="h-full bg-cinnabar/40 w-[65%]"></div></div>
+</div>
+<div class="px-4 border-l border-outline-variant/30">
+<div class="flex justify-between text-body-md font-body-md text-primary-container mb-1">
+<span>88 Years</span>
+<span class="text-outline text-label-sm font-label-sm">from 2012</span>
+</div>
+<div class="w-full h-1 bg-surface-container rounded-full overflow-hidden"><div class="h-full bg-cinnabar/70 w-[88%]"></div></div>
+</div>
+<div class="px-4 border-l border-outline-variant/30">
+<div class="flex justify-between text-body-md font-body-md text-primary-container mb-1">
+<span>58 Years</span>
+<span class="text-outline text-label-sm font-label-sm">from 1982</span>
+</div>
+<div class="w-full h-1 bg-surface-container rounded-full overflow-hidden"><div class="h-full bg-cinnabar/60 w-[58%]"></div></div>
+</div>
+</div>
+<!-- 5. Commute Time -->
+<div class="col-span-full grid grid-cols-subgrid border-b border-outline-variant/50 py-6 items-start hover:bg-surface-container-lowest/50 transition-colors">
+<div class="px-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-outline">commute</span>
+<span class="text-label-md font-label-md text-on-surface">Commute (Raffles Place)</span>
+</div>
+<div class="px-4 border-l border-outline-variant/30 flex items-center gap-3">
+<div class="p-2 rounded-full bg-surface-container text-primary-container"><span class="material-symbols-outlined">train</span></div>
+<div>
+<div class="text-title-lg font-title-lg text-primary-container">35 min</div>
+<div class="text-label-sm font-label-sm text-on-surface-variant">NSL Direct</div>
+</div>
+</div>
+<div class="px-4 border-l border-outline-variant/30 flex items-center gap-3">
+<div class="p-2 rounded-full bg-surface-container text-primary-container"><span class="material-symbols-outlined">train</span></div>
+<div>
+<div class="text-title-lg font-title-lg text-primary-container">20 min</div>
+<div class="text-label-sm font-label-sm text-on-surface-variant">NSL Direct</div>
+</div>
+</div>
+<div class="px-4 border-l border-outline-variant/30 flex items-center gap-3">
+<div class="p-2 rounded-full bg-surface-container text-primary-container"><span class="material-symbols-outlined">directions_bus</span></div>
+<div>
+<div class="text-title-lg font-title-lg text-primary-container">45 min</div>
+<div class="text-label-sm font-label-sm text-on-surface-variant">Bus + NSL</div>
+</div>
+</div>
+</div>
+<!-- 6. Proximity -->
+<div class="col-span-full grid grid-cols-subgrid border-b border-outline-variant/50 py-6 items-start bg-tertiary-fixed/30">
+<div class="px-6 flex flex-col gap-1 pt-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-outline">location_on</span>
+<span class="text-label-md font-label-md text-on-surface">Proximity</span>
+</div>
+</div>
+<div class="px-4 border-l border-outline-variant/30 flex flex-col gap-3">
+<div class="bg-surface-container-lowest border border-outline-variant/40 rounded-xl p-3 flex gap-3 items-start">
+<span class="material-symbols-outlined text-outline mt-0.5">subway</span>
+<div>
+<div class="text-label-md font-label-md text-primary-container">Bishan MRT (NS17)</div>
+<div class="text-label-sm font-label-sm text-on-surface-variant mt-0.5">450m • 6 min walk</div>
+</div>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant/40 rounded-xl p-3 flex gap-3 items-start">
+<span class="material-symbols-outlined text-outline mt-0.5">school</span>
+<div>
+<div class="text-label-md font-label-md text-primary-container">Catholic High Sch</div>
+<div class="text-label-sm font-label-sm text-primary-container mt-0.5 bg-primary-container/10 inline-block px-1.5 rounded">Within 1km</div>
+</div>
+</div>
+</div>
+<div class="px-4 border-l border-outline-variant/30 flex flex-col gap-3">
+<div class="bg-surface-container-lowest border border-outline-variant/40 rounded-xl p-3 flex gap-3 items-start">
+<span class="material-symbols-outlined text-outline mt-0.5">subway</span>
+<div>
+<div class="text-label-md font-label-md text-primary-container">Toa Payoh MRT (NS19)</div>
+<div class="text-label-sm font-label-sm text-on-surface-variant mt-0.5">200m • 3 min walk</div>
+</div>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant/40 rounded-xl p-3 flex gap-3 items-start opacity-70">
+<span class="material-symbols-outlined text-outline mt-0.5">school</span>
+<div>
+<div class="text-label-md font-label-md text-on-surface-variant">No top primary sch</div>
+<div class="text-label-sm font-label-sm text-outline mt-0.5">Within 1km</div>
+</div>
+</div>
+</div>
+<div class="px-4 border-l border-outline-variant/30 flex flex-col gap-3">
+<div class="bg-surface-container-lowest border border-outline-variant/40 rounded-xl p-3 flex gap-3 items-start">
+<span class="material-symbols-outlined text-outline mt-0.5">subway</span>
+<div>
+<div class="text-label-md font-label-md text-primary-container">Ang Mo Kio MRT (NS16)</div>
+<div class="text-label-sm font-label-sm text-on-surface-variant mt-0.5">1.2km • Bus required</div>
+</div>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant/40 rounded-xl p-3 flex gap-3 items-start">
+<span class="material-symbols-outlined text-outline mt-0.5">school</span>
+<div>
+<div class="text-label-md font-label-md text-primary-container">Jing Shan Primary</div>
+<div class="text-label-sm font-label-sm text-primary-container mt-0.5 bg-primary-container/10 inline-block px-1.5 rounded">Within 1km</div>
+</div>
+</div>
+</div>
+</div>
+<!-- 7. User Notes -->
+<div class="col-span-full grid grid-cols-subgrid py-6 items-start">
+<div class="px-6 flex items-center gap-2 pt-2">
+<span class="material-symbols-outlined text-outline">edit_note</span>
+<span class="text-label-md font-label-md text-on-surface">Your Notes</span>
+</div>
+<div class="px-4 border-l border-outline-variant/30">
+<textarea class="w-full h-24 p-3 bg-tertiary-fixed/30 border border-outline-variant/50 rounded-xl text-body-md font-body-md text-on-surface focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-shadow resize-none placeholder-outline" placeholder="Add thoughts..."></textarea>
+</div>
+<div class="px-4 border-l border-outline-variant/30">
+<textarea class="w-full h-24 p-3 bg-tertiary-fixed/30 border border-outline-variant/50 rounded-xl text-body-md font-body-md text-on-surface focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-shadow resize-none placeholder-outline" placeholder="Add thoughts...">Love the view, but out of budget. Need to calculate cash outlay strictly.</textarea>
+</div>
+<div class="px-4 border-l border-outline-variant/30">
+<textarea class="w-full h-24 p-3 bg-tertiary-fixed/30 border border-outline-variant/50 rounded-xl text-body-md font-body-md text-on-surface focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-shadow resize-none placeholder-outline" placeholder="Add thoughts..."></textarea>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Shared Component - Mobile Only) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-2 md:hidden shadow-lg bg-surface-container dark:bg-surface-container-highest rounded-t-xl">
+<!-- Search -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline hover:bg-surface-container-high dark:hover:bg-inverse-surface rounded-lg p-1 transition-colors" href="#">
+<span class="material-symbols-outlined">search</span>
+<span class="text-label-sm font-label-sm mt-1">Search</span>
+</a>
+<!-- Shortlist (Active) -->
+<a class="flex flex-col items-center justify-center bg-secondary-container dark:bg-secondary text-on-secondary-container dark:text-on-secondary rounded-full px-4 py-1 scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">favorite</span>
+<span class="text-label-sm font-label-sm mt-1">Shortlist</span>
+</a>
+<!-- HFE Check -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline hover:bg-surface-container-high dark:hover:bg-inverse-surface rounded-lg p-1 transition-colors" href="#">
+<span class="material-symbols-outlined">assignment_turned_in</span>
+<span class="text-label-sm font-label-sm mt-1">HFE Check</span>
+</a>
+<!-- Profile -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline hover:bg-surface-container-high dark:hover:bg-inverse-surface rounded-lg p-1 transition-colors" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="text-label-sm font-label-sm mt-1">Profile</span>
+</a>
+</nav>
+</body></html>

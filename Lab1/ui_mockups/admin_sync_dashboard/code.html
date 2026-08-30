@@ -1,0 +1,417 @@
+<!DOCTYPE html><html class="light" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Admin Sync Dashboard - FamPlan</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                            "on-background": "#40000c",
+                            "tertiary-container": "#381f12",
+                            "surface-bright": "#fff8f7",
+                            "surface-warm": "#fffcfb",
+                            "on-primary-fixed-variant": "#703341",
+                            "tertiary": "#1f0a02",
+                            "secondary-fixed-dim": "#ffb3b5",
+                            "on-primary": "#ffffff",
+                            "on-tertiary": "#ffffff",
+                            "on-tertiary-fixed": "#2d1509",
+                            "surface-variant": "#ffdada",
+                            "salmon": "#fcb9b2",
+                            "on-secondary-container": "#73061e",
+                            "on-error": "#ffffff",
+                            "secondary": "#a93342",
+                            "on-surface-variant": "#524345",
+                            "error": "#ba1a1a",
+                            "surface-container-lowest": "#ffffff",
+                            "surface": "#fff8f7",
+                            "outline-variant": "#d7c1c4",
+                            "secondary-fixed": "#ffdada",
+                            "on-surface": "#40000c",
+                            "primary-fixed": "#ffd9de",
+                            "on-error-container": "#93000a",
+                            "on-secondary": "#ffffff",
+                            "primary-container": "#461220",
+                            "background": "#fff8f7",
+                            "peach": "#fed0bb",
+                            "primary": "#2a000c",
+                            "surface-container-highest": "#ffdada",
+                            "surface-container": "#ffe9e9",
+                            "surface-container-low": "#fff0f0",
+                            "on-primary-container": "#c17785",
+                            "cinnabar": "#b23a48",
+                            "tertiary-fixed-dim": "#e9bda9",
+                            "on-primary-fixed": "#3a0817",
+                            "inverse-surface": "#620e1c",
+                            "secondary-container": "#ff7480",
+                            "surface-dim": "#ffcecf",
+                            "tertiary-fixed": "#ffdbcb",
+                            "on-tertiary-fixed-variant": "#5f4030",
+                            "deep-burgundy": "#461220",
+                            "surface-container-high": "#ffe1e1",
+                            "primary-fixed-dim": "#ffb2bf",
+                            "inverse-on-surface": "#ffedec",
+                            "on-secondary-fixed-variant": "#891a2c",
+                            "on-tertiary-container": "#ab8471",
+                            "inverse-primary": "#ffb2bf",
+                            "on-secondary-fixed": "#40000c",
+                            "outline": "#857375",
+                            "surface-tint": "#8c4a58",
+                            "error-container": "#ffdad6"
+                    },
+                    "borderRadius": {
+                            "DEFAULT": "0.125rem",
+                            "lg": "0.25rem",
+                            "xl": "0.5rem",
+                            "full": "0.75rem"
+                    },
+                    "spacing": {
+                            "xs": "4px",
+                            "sm": "8px",
+                            "base": "4px",
+                            "margin-mobile": "16px",
+                            "xl": "32px",
+                            "margin-desktop": "64px",
+                            "md": "16px",
+                            "gutter": "24px",
+                            "lg": "24px"
+                    },
+                    "fontFamily": {
+                            "title-md": ["Public Sans"],
+                            "label-md": ["Public Sans"],
+                            "body-sm": ["Public Sans"],
+                            "display-lg": ["Public Sans"],
+                            "title-lg": ["Public Sans"],
+                            "label-sm": ["Public Sans"],
+                            "headline-lg": ["Public Sans"],
+                            "body-lg": ["Public Sans"],
+                            "body-md": ["Public Sans"],
+                            "headline-lg-mobile": ["Public Sans"],
+                            "headline-md": ["Public Sans"],
+                            "label-lg": ["Public Sans"]
+                    },
+                    "fontSize": {
+                            "title-md": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                            "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                            "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                            "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                            "title-lg": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                            "label-sm": ["11px", {"lineHeight": "16px", "fontWeight": "500"}],
+                            "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                            "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                            "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                            "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                            "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                            "label-lg": ["14px", {"lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+        body { font-family: 'Public Sans', sans-serif; }
+    </style>
+</head>
+<body class="bg-surface-warm text-on-background min-h-screen flex flex-col">
+<!-- Top Navigation (Hidden on mobile per instructions, shown on md up) -->
+<header class="hidden md:flex sticky top-0 w-full z-50 justify-between items-center px-margin-desktop bg-surface dark:bg-inverse-surface border-b border-outline-variant py-4 shadow-sm h-[72px]">
+<div class="flex items-center gap-8">
+<div class="text-headline-md font-headline-md font-bold text-singapore-red dark:text-secondary-fixed">
+                FamPlan
+            </div>
+<nav class="flex items-center gap-6">
+<!-- Highlight 'Explore' as fallback if intent isn't exact, but intent is Admin, so none are technically active for user view, but we follow rules -->
+<a class="text-on-surface-variant dark:text-surface-variant text-label-md font-label-md hover:text-singapore-red transition-colors duration-200" href="#">Explore</a>
+<a class="text-on-surface-variant dark:text-surface-variant text-label-md font-label-md hover:text-singapore-red transition-colors duration-200" href="#">Shortlist</a>
+<a class="text-on-surface-variant dark:text-surface-variant text-label-md font-label-md hover:text-singapore-red transition-colors duration-200" href="#">Eligibility</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-outline cursor-pointer hover:text-singapore-red transition-colors">favorite</span>
+<span class="material-symbols-outlined text-outline cursor-pointer hover:text-singapore-red transition-colors">account_circle</span>
+<button class="text-label-md font-label-md text-government-navy border border-government-navy px-4 py-2 rounded">Compare</button>
+<button class="text-label-md font-label-md bg-cinnabar text-on-primary px-4 py-2 rounded">Sign In</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow w-full max-w-[1200px] mx-auto px-margin-mobile md:px-margin-desktop py-8 mb-20 md:mb-8">
+<div class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<h1 class="text-headline-lg font-headline-lg text-deep-burgundy">Data Sync Dashboard</h1>
+<p class="text-body-md font-body-md text-on-surface-variant mt-2">Monitor and manage external data source integrations.</p>
+</div>
+<button class="bg-cinnabar text-on-primary text-label-lg font-label-lg px-6 py-3 rounded flex items-center justify-center gap-2 hover:bg-secondary transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">sync</span>
+                Sync All Sources
+            </button>
+</div>
+<!-- Bento Grid for Data Sources -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+<!-- Source Card: HDB Resale -->
+<div class="bg-white rounded-xl p-6 border border-deep-burgundy/10 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+<div class="absolute top-0 right-0 w-24 h-24 bg-peach/20 rounded-bl-full -z-10 group-hover:scale-110 transition-transform"></div>
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-peach flex items-center justify-center text-deep-burgundy">
+<span class="material-symbols-outlined">apartment</span>
+</div>
+<h2 class="text-title-md font-title-md text-deep-burgundy">HDB Resale</h2>
+</div>
+<span class="bg-surface-container-high text-on-surface text-label-sm font-label-sm px-2 py-1 rounded-full flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-green-500"></span> OK
+                    </span>
+</div>
+<div class="space-y-3 mb-6">
+<div class="flex justify-between border-b border-outline-variant/30 pb-2">
+<span class="text-label-md font-label-md text-outline">Records</span>
+<span class="text-body-sm font-body-sm text-on-surface font-semibold">1,204,500</span>
+</div>
+<div class="flex justify-between border-b border-outline-variant/30 pb-2">
+<span class="text-label-md font-label-md text-outline">Last Sync</span>
+<span class="text-body-sm font-body-sm text-on-surface">Today, 04:00 AM</span>
+</div>
+<div class="flex justify-between">
+<span class="text-label-md font-label-md text-outline">Latency</span>
+<span class="text-body-sm font-body-sm text-on-surface">12ms</span>
+</div>
+</div>
+<button class="w-full border border-deep-burgundy text-deep-burgundy text-label-md font-label-md py-2 rounded hover:bg-surface-container-low transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm">sync</span> Sync Now
+                </button>
+</div>
+<!-- Source Card: HDB Property -->
+<div class="bg-white rounded-xl p-6 border border-deep-burgundy/10 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+<div class="absolute top-0 right-0 w-24 h-24 bg-salmon/20 rounded-bl-full -z-10 group-hover:scale-110 transition-transform"></div>
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-peach flex items-center justify-center text-deep-burgundy">
+<span class="material-symbols-outlined">location_city</span>
+</div>
+<h2 class="text-title-md font-title-md text-deep-burgundy">HDB Property</h2>
+</div>
+<span class="bg-error-container text-on-error-container text-label-sm font-label-sm px-2 py-1 rounded-full flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-error"></span> Failed
+                    </span>
+</div>
+<div class="space-y-3 mb-6">
+<div class="flex justify-between border-b border-outline-variant/30 pb-2">
+<span class="text-label-md font-label-md text-outline">Records</span>
+<span class="text-body-sm font-body-sm text-on-surface font-semibold">12,450</span>
+</div>
+<div class="flex justify-between border-b border-outline-variant/30 pb-2">
+<span class="text-label-md font-label-md text-outline">Last Sync</span>
+<span class="text-body-sm font-body-sm text-on-surface text-error">Yesterday, 04:00 AM</span>
+</div>
+<div class="flex justify-between">
+<span class="text-label-md font-label-md text-outline">Latency</span>
+<span class="text-body-sm font-body-sm text-on-surface">-</span>
+</div>
+</div>
+<button class="w-full bg-cinnabar text-on-primary text-label-md font-label-md py-2 rounded hover:bg-secondary transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm">replay</span> Retry Sync
+                </button>
+</div>
+<!-- Source Card: MOE Schools -->
+<div class="bg-white rounded-xl p-6 border border-deep-burgundy/10 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+<div class="absolute top-0 right-0 w-24 h-24 bg-peach/20 rounded-bl-full -z-10 group-hover:scale-110 transition-transform"></div>
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-peach flex items-center justify-center text-deep-burgundy">
+<span class="material-symbols-outlined">school</span>
+</div>
+<h2 class="text-title-md font-title-md text-deep-burgundy">MOE Schools</h2>
+</div>
+<span class="bg-surface-variant text-on-surface-variant text-label-sm font-label-sm px-2 py-1 rounded-full flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-orange-400"></span> Stale
+                    </span>
+</div>
+<div class="space-y-3 mb-6">
+<div class="flex justify-between border-b border-outline-variant/30 pb-2">
+<span class="text-label-md font-label-md text-outline">Records</span>
+<span class="text-body-sm font-body-sm text-on-surface font-semibold">342</span>
+</div>
+<div class="flex justify-between border-b border-outline-variant/30 pb-2">
+<span class="text-label-md font-label-md text-outline">Last Sync</span>
+<span class="text-body-sm font-body-sm text-on-surface">3 days ago</span>
+</div>
+<div class="flex justify-between">
+<span class="text-label-md font-label-md text-outline">Latency</span>
+<span class="text-body-sm font-body-sm text-on-surface">45ms</span>
+</div>
+</div>
+<button class="w-full border border-deep-burgundy text-deep-burgundy text-label-md font-label-md py-2 rounded hover:bg-surface-container-low transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm">sync</span> Sync Now
+                </button>
+</div>
+<!-- Source Card: OneMap -->
+<div class="bg-white rounded-xl p-6 border border-deep-burgundy/10 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+<div class="absolute top-0 right-0 w-24 h-24 bg-peach/20 rounded-bl-full -z-10 group-hover:scale-110 transition-transform"></div>
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-peach flex items-center justify-center text-deep-burgundy">
+<span class="material-symbols-outlined">map</span>
+</div>
+<h2 class="text-title-md font-title-md text-deep-burgundy">OneMap API</h2>
+</div>
+<span class="bg-surface-container-high text-on-surface text-label-sm font-label-sm px-2 py-1 rounded-full flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-green-500"></span> OK
+                    </span>
+</div>
+<div class="space-y-3 mb-6">
+<div class="flex justify-between border-b border-outline-variant/30 pb-2">
+<span class="text-label-md font-label-md text-outline">Records</span>
+<span class="text-body-sm font-body-sm text-on-surface font-semibold">Live</span>
+</div>
+<div class="flex justify-between border-b border-outline-variant/30 pb-2">
+<span class="text-label-md font-label-md text-outline">Last Checked</span>
+<span class="text-body-sm font-body-sm text-on-surface">10 mins ago</span>
+</div>
+<div class="flex justify-between">
+<span class="text-label-md font-label-md text-outline">Latency</span>
+<span class="text-body-sm font-body-sm text-on-surface">18ms</span>
+</div>
+</div>
+<button class="w-full border border-deep-burgundy text-deep-burgundy text-label-md font-label-md py-2 rounded hover:bg-surface-container-low transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm">sync</span> Test Connection
+                </button>
+</div>
+<!-- Source Card: LTA DataMall -->
+<div class="bg-white rounded-xl p-6 border border-deep-burgundy/10 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+<div class="absolute top-0 right-0 w-24 h-24 bg-peach/20 rounded-bl-full -z-10 group-hover:scale-110 transition-transform"></div>
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-peach flex items-center justify-center text-deep-burgundy">
+<span class="material-symbols-outlined">directions_bus</span>
+</div>
+<h2 class="text-title-md font-title-md text-deep-burgundy">LTA DataMall</h2>
+</div>
+<span class="bg-surface-container-high text-on-surface text-label-sm font-label-sm px-2 py-1 rounded-full flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-green-500"></span> OK
+                    </span>
+</div>
+<div class="space-y-3 mb-6">
+<div class="flex justify-between border-b border-outline-variant/30 pb-2">
+<span class="text-label-md font-label-md text-outline">Records</span>
+<span class="text-body-sm font-body-sm text-on-surface font-semibold">5,230</span>
+</div>
+<div class="flex justify-between border-b border-outline-variant/30 pb-2">
+<span class="text-label-md font-label-md text-outline">Last Sync</span>
+<span class="text-body-sm font-body-sm text-on-surface">Today, 05:00 AM</span>
+</div>
+<div class="flex justify-between">
+<span class="text-label-md font-label-md text-outline">Latency</span>
+<span class="text-body-sm font-body-sm text-on-surface">22ms</span>
+</div>
+</div>
+<button class="w-full border border-deep-burgundy text-deep-burgundy text-label-md font-label-md py-2 rounded hover:bg-surface-container-low transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm">sync</span> Sync Now
+                </button>
+</div>
+<!-- Summary Card -->
+<div class="bg-salmon rounded-xl p-6 flex flex-col justify-center items-center shadow-sm relative overflow-hidden text-center">
+<div class="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
+<h3 class="text-title-lg font-title-lg text-deep-burgundy mb-2 relative z-10">System Status</h3>
+<p class="text-body-lg font-body-lg text-on-surface-variant relative z-10 mb-4">4/5 Sources Operating Normally</p>
+<div class="w-16 h-16 rounded-full bg-white flex items-center justify-center relative z-10">
+<span class="material-symbols-outlined text-3xl text-orange-500">warning</span>
+</div>
+</div>
+</div>
+<!-- Sync History Log Table -->
+<section class="bg-white rounded-xl border border-deep-burgundy/10 shadow-sm overflow-hidden">
+<div class="px-6 py-4 border-b border-outline-variant/30 bg-surface-bright flex justify-between items-center">
+<h3 class="text-title-lg font-title-lg text-deep-burgundy">Sync History Logs</h3>
+<div class="flex gap-2">
+<button class="text-label-md font-label-md text-outline hover:text-deep-burgundy flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">filter_list</span> Filter
+                    </button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-lowest border-b border-outline-variant/50">
+<th class="px-6 py-3 text-label-md font-label-md text-outline uppercase">Time</th>
+<th class="px-6 py-3 text-label-md font-label-md text-outline uppercase">Source</th>
+<th class="px-6 py-3 text-label-md font-label-md text-outline uppercase">Status</th>
+<th class="px-6 py-3 text-label-md font-label-md text-outline uppercase text-right">Records Added</th>
+<th class="px-6 py-3 text-label-md font-label-md text-outline uppercase text-right">Records Changed</th>
+<th class="px-6 py-3 text-label-md font-label-md text-outline uppercase text-center">Details</th>
+</tr>
+</thead>
+<tbody class="text-body-sm font-body-sm">
+<tr class="border-b border-outline-variant/30 hover:bg-surface-container-low transition-colors">
+<td class="px-6 py-4 text-on-surface">Oct 24, 05:00 AM</td>
+<td class="px-6 py-4 font-medium text-deep-burgundy">LTA DataMall</td>
+<td class="px-6 py-4"><span class="text-green-600 font-medium">Success</span></td>
+<td class="px-6 py-4 text-right">12</td>
+<td class="px-6 py-4 text-right">45</td>
+<td class="px-6 py-4 text-center">
+<button class="text-outline hover:text-cinnabar"><span class="material-symbols-outlined text-sm">visibility</span></button>
+</td>
+</tr>
+<tr class="border-b border-outline-variant/30 hover:bg-surface-container-low transition-colors">
+<td class="px-6 py-4 text-on-surface">Oct 24, 04:00 AM</td>
+<td class="px-6 py-4 font-medium text-deep-burgundy">HDB Resale</td>
+<td class="px-6 py-4"><span class="text-green-600 font-medium">Success</span></td>
+<td class="px-6 py-4 text-right">340</td>
+<td class="px-6 py-4 text-right">1,200</td>
+<td class="px-6 py-4 text-center">
+<button class="text-outline hover:text-cinnabar"><span class="material-symbols-outlined text-sm">visibility</span></button>
+</td>
+</tr>
+<tr class="border-b border-outline-variant/30 hover:bg-surface-container-low transition-colors bg-error-container/20">
+<td class="px-6 py-4 text-on-surface">Oct 24, 04:00 AM</td>
+<td class="px-6 py-4 font-medium text-deep-burgundy">HDB Property</td>
+<td class="px-6 py-4"><span class="text-error font-medium">Timeout</span></td>
+<td class="px-6 py-4 text-right text-outline">-</td>
+<td class="px-6 py-4 text-right text-outline">-</td>
+<td class="px-6 py-4 text-center">
+<button class="text-error hover:text-cinnabar"><span class="material-symbols-outlined text-sm">warning</span></button>
+</td>
+</tr>
+<tr class="border-b border-outline-variant/30 hover:bg-surface-container-low transition-colors">
+<td class="px-6 py-4 text-on-surface">Oct 23, 04:00 AM</td>
+<td class="px-6 py-4 font-medium text-deep-burgundy">HDB Property</td>
+<td class="px-6 py-4"><span class="text-green-600 font-medium">Success</span></td>
+<td class="px-6 py-4 text-right">0</td>
+<td class="px-6 py-4 text-right">24</td>
+<td class="px-6 py-4 text-center">
+<button class="text-outline hover:text-cinnabar"><span class="material-symbols-outlined text-sm">visibility</span></button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="px-6 py-3 border-t border-outline-variant/30 bg-surface-bright flex justify-center">
+<button class="text-label-md font-label-md text-deep-burgundy hover:underline">View Full Logs</button>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation (Mobile Only per instructions) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-2 md:hidden bg-surface-container dark:bg-surface-container-highest shadow-md rounded-t-xl">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline w-16 hover:bg-surface-container-high dark:hover:bg-inverse-surface py-1 rounded-lg" href="#">
+<span class="material-symbols-outlined mb-1">search</span>
+<span class="text-label-sm font-label-sm">Search</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline w-16 hover:bg-surface-container-high dark:hover:bg-inverse-surface py-1 rounded-lg" href="#">
+<span class="material-symbols-outlined mb-1">favorite</span>
+<span class="text-label-sm font-label-sm">Shortlist</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline w-16 hover:bg-surface-container-high dark:hover:bg-inverse-surface py-1 rounded-lg" href="#">
+<span class="material-symbols-outlined mb-1">assignment_turned_in</span>
+<span class="text-label-sm font-label-sm">HFE Check</span>
+</a>
+<!-- Mapping Admin conceptually to Profile as fallback active for mobile nav if forced, but leaving inactive as it's a specific desktop view ideally -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline w-16 hover:bg-surface-container-high dark:hover:bg-inverse-surface py-1 rounded-lg" href="#">
+<span class="material-symbols-outlined mb-1">person</span>
+<span class="text-label-sm font-label-sm">Profile</span>
+</a>
+</nav>
+</body></html>
