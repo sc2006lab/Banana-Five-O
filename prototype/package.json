@@ -1,0 +1,37 @@
+{
+  "name": "famplan",
+  "private": true,
+  "version": "0.1.0",
+  "description": "FamPlan — family-neighbourhood decision support for Singapore households (SC2006 Banana Five-O)",
+  "type": "module",
+  "workspaces": [
+    "shared",
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev": "concurrently -n server,client -c auto \"npm:dev -w server\" \"npm:dev -w client\"",
+    "build": "npm run build -w client",
+    "start": "npm run start -w server",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:seed": "npm run seed -w server",
+    "sync": "npm run sync -w server",
+    "test": "npm run test -w server",
+    "typecheck": "tsc -p server --noEmit && tsc -p client --noEmit"
+  },
+  "prisma": {
+    "schema": "prisma/schema.prisma"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.5",
+    "prisma": "6.19.3",
+    "typescript": "5.9.3"
+  },
+  "allowScripts": {
+    "prisma@6.19.3": true,
+    "@prisma/engines@6.19.3": true,
+    "@prisma/client@6.19.3": true,
+    "esbuild@0.28.2": true
+  }
+}

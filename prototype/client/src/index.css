@@ -1,0 +1,167 @@
+@import 'tailwindcss';
+@import 'leaflet/dist/leaflet.css';
+
+/* Warm Institutional design system (Lab 1 UI mockups / DESIGN.md) */
+@theme {
+  --font-sans: 'Public Sans', ui-sans-serif, system-ui, sans-serif;
+
+  --color-burgundy: #461220;
+  --color-burgundy-deep: #2a000c;
+  --color-cinnabar: #b23a48;
+  --color-cinnabar-dark: #93283a;
+  --color-salmon: #fcb9b2;
+  --color-peach: #fed0bb;
+  --color-blush: #fff0f0;
+  --color-surface: #fff8f7;
+  --color-surface-warm: #fffcfb;
+  --color-ink: #2d1619;
+  --color-muted: #5d4447;
+  --color-line: #d5b9bc;
+  --color-line-soft: #f0dfe0;
+
+  --color-good: #1d6b3a;
+  --color-good-bg: #e3f3e8;
+  --color-fair: #8a4b00;
+  --color-fair-bg: #fff1dc;
+  --color-poor: #a21c2c;
+  --color-poor-bg: #ffe3e3;
+
+  --radius-DEFAULT: 0.25rem;
+  --shadow-float: 0px 8px 24px rgba(70, 18, 32, 0.12);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background: var(--color-surface-warm);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  direction: ltr;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  user-select: none;
+}
+.material-symbols-outlined.filled {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* Visible focus indicator (NFR-ACC-02): 2px Cinnabar ring with offset */
+:focus-visible {
+  outline: 2px solid var(--color-cinnabar);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded px-4 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+}
+
+@layer components {
+  .btn-primary {
+    @apply btn bg-cinnabar text-white hover:bg-cinnabar-dark;
+  }
+  .btn-dark {
+    @apply btn bg-burgundy text-white hover:bg-burgundy-deep;
+  }
+  .btn-secondary {
+    @apply btn border border-burgundy bg-white text-burgundy hover:bg-blush;
+  }
+  .btn-ghost {
+    @apply btn text-burgundy hover:bg-blush;
+  }
+  .btn-sm {
+    @apply px-3 py-1.5 text-xs;
+  }
+  .card {
+    @apply rounded-lg border border-burgundy/10 bg-white;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1 rounded bg-salmon/70 px-2 py-0.5 text-xs font-medium text-burgundy;
+  }
+  .chip-outline {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-line bg-white px-3 py-1.5 text-sm font-semibold text-burgundy transition-colors hover:bg-blush;
+  }
+  .chip-outline[aria-pressed='true'],
+  .chip-outline[aria-checked='true'] {
+    @apply border-burgundy bg-burgundy text-white hover:bg-burgundy-deep;
+  }
+  .input {
+    @apply w-full rounded border border-line bg-white px-3 py-2 text-sm text-ink placeholder:text-muted/70 focus:border-cinnabar focus:shadow-[0_0_0_3px_rgba(254,208,187,0.9)] focus:outline-none;
+  }
+  .input[aria-invalid='true'] {
+    @apply border-poor;
+  }
+  .label {
+    @apply mb-1 block text-sm font-semibold text-burgundy;
+  }
+  .eyebrow {
+    @apply text-[11px] font-semibold tracking-wider text-muted uppercase;
+  }
+  .field-error {
+    @apply mt-1 flex items-start gap-1 text-xs font-medium text-poor;
+  }
+}
+
+/* Leaflet tweaks */
+.leaflet-container {
+  font-family: var(--font-sans);
+  background: #dcebf2;
+}
+.fp-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  color: #fff;
+}
+.fp-marker .material-symbols-outlined {
+  font-size: 15px;
+}
+.fp-pin {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(70, 18, 32, 0.35);
+  transform: translate(-50%, -100%);
+  position: relative;
+}
+.fp-pin::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -5px;
+  margin-left: -5px;
+  border: 5px solid transparent;
+  border-bottom: 0;
+  border-top-color: inherit;
+}
+.leaflet-marker-icon:focus-visible {
+  outline: 3px solid var(--color-cinnabar);
+  outline-offset: 2px;
+}
+.leaflet-control-attribution img {
+  display: inline;
+}

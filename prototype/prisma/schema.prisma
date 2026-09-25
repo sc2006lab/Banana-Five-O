@@ -1,0 +1,232 @@
+// FamPlan persistence model — mirrors the Lab 2 class diagram entity layer and SRS v1.3 §6.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  REGISTERED_USER
+  DATA_ADMINISTRATOR
+}
+
+enum AccountStatus {
+  ACTIVE
+  LOCKED
+}
+
+enum SyncOutcome {
+  RUNNING
+  SUCCESS
+  NO_CHANGES
+  FAILED
+}
+
+enum SyncTrigger {
+  SCHEDULE
+  STARTUP
+  CLI
+}
+
+// ───────────── Account ─────────────
+
+model UserAccount {
+  id               String        @id @default(uuid()) @db.Uuid
+  displayName      String        @db.VarChar(60)
+  email            String        @unique @db.VarChar(254)
+  role             UserRole      @default(REGISTERED_USER)
+  status           AccountStatus @default(ACTIVE)
+  consentGivenAt   DateTime
+  failedLoginCount Int           @default(0)
+  lockedUntil      DateTime?
+  createdAt        DateTime      @default(now())
+
+  credential  PasswordCredential?
+  sessions    Session[]
+  resetTokens PasswordResetToken[]
+  preference  FamilyPreferenceProfile?
+  shortlist   ShortlistEntry[]
+}
+
+model PasswordCredential {
+  accountId  String      @id @db.Uuid
+  saltedHash String
+  algorithm  String      @default("argon2id")
+  parameters String
+  updatedAt  DateTime    @updatedAt
+  account    UserAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+}
+
+model Session {
+  id            String      @id @default(uuid()) @db.Uuid
+  tokenHash     String      @unique
+  accountId     String      @db.Uuid
+  createdAt     DateTime    @default(now())
+  expiresAt     DateTime
+  invalidatedAt DateTime?
+  account       UserAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId])
+}
+
+model PasswordResetToken {
+  id        String      @id @default(uuid()) @db.Uuid
+  tokenHash String      @unique
+  accountId String      @db.Uuid
+  createdAt DateTime    @default(now())
+  expiresAt DateTime
+  usedAt    DateTime?
+  account   UserAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+}
+
+// ───────────── Preferences ─────────────
+
+model FamilyPreferenceProfile {
+  accountId         String   @id @db.Uuid
+  familyStages      String[]
+  preferredAreas    String[]
+  amenityThresholds Json     @default("{}")
+  // Criterion weights (integer 0–5; CHECK constraints in migration)
+  wChildcare        Int      @default(3)
+  wSchools          Int      @default(3)
+  wGroceries        Int      @default(3)
+  wHealthcare       Int      @default(3)
+  wGreenSpaces      Int      @default(3)
+  wPublicTransport  Int      @default(3)
+  wCommute          Int      @default(3)
+  wAccessibility    Int      @default(3)
+  confirmedWeights  String[]
+  updatedAt         DateTime @updatedAt
+
+  account      UserAccount           @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  destinations PriorityDestination[]
+}
+
+model PriorityDestination {
+  id        String                  @id @default(uuid()) @db.Uuid
+  profileId String                  @db.Uuid
+  slot      Int
+  label     String                  @db.VarChar(40)
+  queryText String                  @db.VarChar(200)
+  address   String                  @db.VarChar(300)
+  lat       Float
+  lng       Float
+  profile   FamilyPreferenceProfile @relation(fields: [profileId], references: [accountId], onDelete: Cascade)
+
+  @@unique([profileId, slot])
+}
+
+// ───────────── Neighbourhoods & facilities ─────────────
+
+model Neighbourhood {
+  id            String   @id @db.VarChar(12) // URA subzone code, stable across dataset versions
+  name          String
+  planningArea  String
+  region        String
+  refLat        Float
+  refLng        Float
+  boundaryBasis String
+  boundary      Json
+  areaSqm       Float
+  snapshotId    String   @db.Uuid
+  updatedAt     DateTime @updatedAt
+
+  shortlistEntries ShortlistEntry[]
+
+  @@index([planningArea])
+}
+
+model Facility {
+  id             String          @id @default(uuid()) @db.Uuid
+  snapshotId     String          @db.Uuid
+  sourceRecordId String
+  name           String
+  category       String
+  address        String?
+  postalCode     String?
+  lat            Float
+  lng            Float
+  details        Json            @default("{}")
+  recordHash     String
+  snapshot       DatasetSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+
+  @@index([snapshotId])
+  @@index([category])
+}
+
+model GeocodeCache {
+  key         String   @id
+  lat         Float?
+  lng         Float?
+  address     String?
+  retrievedAt DateTime @default(now())
+}
+
+// ───────────── Decision support ─────────────
+
+model ShortlistEntry {
+  id              String        @id @default(uuid()) @db.Uuid
+  accountId       String        @db.Uuid
+  neighbourhoodId String        @db.VarChar(12)
+  addedAt         DateTime      @default(now())
+  note            String        @default("") @db.VarChar(500)
+  noteUpdatedAt   DateTime?
+  account         UserAccount   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  neighbourhood   Neighbourhood @relation(fields: [neighbourhoodId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, neighbourhoodId])
+}
+
+// ───────────── Data synchronisation & provenance ─────────────
+
+model DataSourceRegistry {
+  id                     String    @id @db.VarChar(40)
+  name                   String
+  provider               String
+  schedule               String
+  freshnessThresholdDays Int       @default(31)
+  lastAttemptAt          DateTime?
+  lastSuccessAt          DateTime?
+  status                 String    @default("NEVER_RUN")
+  publisherUpdatedAt     DateTime?
+  lastError              String?
+
+  snapshots DatasetSnapshot[]
+  history   SyncHistoryRecord[]
+}
+
+model DatasetSnapshot {
+  id           String             @id @default(uuid()) @db.Uuid
+  sourceId     String             @db.VarChar(40)
+  version      Int
+  validatedAt  DateTime           @default(now())
+  active       Boolean            @default(false)
+  recordCount  Int
+  checksum     String
+  coverageNote String?
+  source       DataSourceRegistry @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  facilities   Facility[]
+
+  @@unique([sourceId, version])
+  @@index([sourceId, active])
+}
+
+model SyncHistoryRecord {
+  id             String             @id @default(uuid()) @db.Uuid
+  sourceId       String             @db.VarChar(40)
+  startedAt      DateTime           @default(now())
+  endedAt        DateTime?
+  outcome        SyncOutcome        @default(RUNNING)
+  recordsAdded   Int                @default(0)
+  recordsChanged Int                @default(0)
+  recordsRemoved Int                @default(0)
+  sanitisedError String?
+  trigger        SyncTrigger
+  source         DataSourceRegistry @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@index([sourceId, startedAt])
+}
