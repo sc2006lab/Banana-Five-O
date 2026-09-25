@@ -1,0 +1,37 @@
+{
+  "name": "@famplan/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --env-file=../.env src/index.ts",
+    "start": "NODE_ENV=production tsx --env-file=../.env src/index.ts",
+    "seed": "tsx --env-file=../.env src/scripts/seed.ts",
+    "sync": "tsx --env-file=../.env src/scripts/sync.ts",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@famplan/shared": "*",
+    "@node-rs/argon2": "^2.2.1",
+    "@prisma/client": "6.19.3",
+    "@turf/boolean-point-in-polygon": "^7.4.0",
+    "cookie-parser": "^1.4.7",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.7.0",
+    "helmet": "^8.3.0",
+    "node-cron": "^4.6.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "^1.4.9",
+    "@types/express": "^5.0.3",
+    "@types/geojson": "^7946.0.16",
+    "@types/node": "^24.0.0",
+    "@types/supertest": "^6.0.3",
+    "@vitest/coverage-v8": "^5.0.2",
+    "supertest": "^7.3.0",
+    "tsx": "^4.23.15",
+    "vitest": "^5.0.2"
+  }
+}
