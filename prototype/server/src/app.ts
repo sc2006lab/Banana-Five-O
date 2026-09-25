@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import express, { type NextFunction, type Request, type Response } from 'express';
 import helmet from 'helmet';
@@ -12,6 +13,8 @@ import { neighbourhoodRouter } from './neighbourhoods/routes.js';
 import { preferencesRouter } from './preferences/routes.js';
 import { shortlistRouter } from './shortlist/routes.js';
 import { adminRouter } from './synchronisation/routes.js';
+import { billingRouter, stripeWebhook } from './billing/routes.js';
+import { workspaceRouter } from './workspaces/routes.js';
 
 /** CSRF defence: state-changing API calls must be JSON (cross-site forms cannot send it without CORS preflight). */
 function requireJsonForMutations(req: Request, _res: Response, next: NextFunction) {
@@ -23,7 +26,9 @@ function requireJsonForMutations(req: Request, _res: Response, next: NextFunctio
 export function createApp() {
   const app = express();
   app.disable('x-powered-by');
-  app.set('trust proxy', 'loopback');
+  app.set('trust proxy', config.https ? 1 : 'loopback');
+  if (config.https)
+    app.use((req, res, next) => (req.secure ? next() : res.redirect(308, `https://${req.headers.host}${req.originalUrl}`)));
   app.use(
     helmet({
       contentSecurityPolicy: {
@@ -33,12 +38,15 @@ export function createApp() {
           styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
           fontSrc: ["'self'", 'https://fonts.gstatic.com'],
           connectSrc: ["'self'"],
-          upgradeInsecureRequests: config.isProduction ? [] : null,
+          upgradeInsecureRequests: config.https ? [] : null,
         },
       },
-      strictTransportSecurity: config.isProduction,
+      strictTransportSecurity: config.https,
     }),
   );
+  app.use(compression());
+  // Stripe needs the raw body to verify signatures, so the webhook is mounted before the JSON parser.
+  app.post('/api/billing/webhook', ...stripeWebhook);
   app.use(express.json({ limit: '32kb' }));
   app.use(cookieParser());
 
@@ -50,6 +58,8 @@ export function createApp() {
   api.use(preferencesRouter);
   api.use(neighbourhoodRouter);
   api.use(shortlistRouter);
+  api.use(workspaceRouter);
+  api.use(billingRouter);
   api.use(adminRouter);
   api.use((_req, _res, next) => next(new HttpError(404, 'Unknown API endpoint.')));
   app.use('/api', api);

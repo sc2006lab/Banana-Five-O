@@ -17,6 +17,7 @@ import { HttpError, parse } from '../lib/http.js';
 import { sendMail } from './mailer.js';
 import { ARGON2_PARAMS_LABEL, dummyVerify, hashPassword, verifyPassword } from './passwords.js';
 import { SESSION_COOKIE, clearSessionCookie, createSession, hashToken, newToken, requireUser } from './sessions.js';
+import { createWorkspace, summaries } from '../workspaces/service.js';
 
 export const GENERIC_LOGIN_FAILURE =
   'Email or password is incorrect, or the account is temporarily locked after repeated failed attempts. Try again later or reset your password.';
@@ -37,14 +38,18 @@ accountRouter.post('/auth/register', authLimiter, async (req, res) => {
   const exists = await prisma.userAccount.findUnique({ where: { email: input.email } });
   if (exists) throw new HttpError(409, 'An account with this email already exists.', { email: 'An account with this email already exists. Sign in or reset your password.' });
   const saltedHash = await hashPassword(input.password);
-  const account = await prisma.userAccount.create({
-    data: {
-      displayName: input.displayName,
-      email: input.email,
-      consentGivenAt: new Date(),
-      credential: { create: { saltedHash, algorithm: 'argon2id', parameters: ARGON2_PARAMS_LABEL } },
-      preference: { create: { familyStages: [], preferredAreas: [], confirmedWeights: [] } },
-    },
+  const account = await prisma.$transaction(async (tx) => {
+    const a = await tx.userAccount.create({
+      data: {
+        displayName: input.displayName,
+        email: input.email,
+        consentGivenAt: new Date(),
+        credential: { create: { saltedHash, algorithm: 'argon2id', parameters: ARGON2_PARAMS_LABEL } },
+        preference: { create: { familyStages: [], preferredAreas: [], confirmedWeights: [] } },
+      },
+    });
+    const ws = await createWorkspace(tx, a.id, `${input.displayName}'s household`, true, 'household');
+    return tx.userAccount.update({ where: { id: a.id }, data: { activeWorkspaceId: ws.id } });
   });
   await createSession(res, account.id);
   res.status(201).json({ id: account.id, displayName: account.displayName, email: account.email, role: account.role });
@@ -88,8 +93,15 @@ accountRouter.post('/auth/logout', async (req, res) => {
   res.json({ ok: true });
 });
 
-accountRouter.get('/auth/me', (req, res) => {
-  res.json(req.user ?? null);
+accountRouter.get('/auth/me', async (req, res) => {
+  if (!req.user) {
+    res.json(null);
+    return;
+  }
+  const a = await prisma.userAccount.findUnique({ where: { id: req.user.id }, select: { plan: true, activeWorkspaceId: true } });
+  const list = await summaries(req.user.id);
+  const workspace = list.find((w) => w.id === a?.activeWorkspaceId) ?? list[0] ?? null;
+  res.json({ ...req.user, plan: a?.plan ?? 'household', workspace });
 });
 
 accountRouter.post('/auth/forgot-password', authLimiter, async (req, res) => {

@@ -10,6 +10,8 @@ export default defineConfig({
       DATABASE_URL: process.env.TEST_DATABASE_URL ?? `postgresql://${process.env.USER}@localhost:5432/famplan_test`,
       SYNC_ON_STARTUP: 'false',
       APP_ORIGIN: 'http://localhost:5173',
+      STRIPE_WEBHOOK_SECRET: 'whsec_test_secret',
+      BILLING_DEMO: 'true',
     },
     coverage: {
       provider: 'v8',

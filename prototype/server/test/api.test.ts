@@ -267,10 +267,13 @@ describe('shortlist and notes (UC-6.3)', () => {
   it('enforces capacity in the database even for concurrent inserts', async () => {
     const agent = await register();
     const acc = await prisma.userAccount.findFirstOrThrow();
+    const ws = await prisma.workspace.findFirstOrThrow({ where: { ownerId: acc.id } });
     await Promise.allSettled(
-      Array.from({ length: 12 }, (_, i) => prisma.shortlistEntry.create({ data: { accountId: acc.id, neighbourhoodId: `TVSZ${String(i + 1).padStart(2, '0')}` } })),
+      Array.from({ length: 12 }, (_, i) =>
+        prisma.shortlistEntry.create({ data: { workspaceId: ws.id, accountId: acc.id, neighbourhoodId: `TVSZ${String(i + 1).padStart(2, '0')}` } }),
+      ),
     );
-    expect(await prisma.shortlistEntry.count({ where: { accountId: acc.id } })).toBe(10);
+    expect(await prisma.shortlistEntry.count({ where: { workspaceId: ws.id } })).toBe(10);
     expect((await agent.get('/api/shortlist')).body.entries).toHaveLength(10);
   });
 

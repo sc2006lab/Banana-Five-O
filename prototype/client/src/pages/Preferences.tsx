@@ -308,7 +308,7 @@ export function PreferencesPage() {
               className="btn-secondary"
               onClick={() => {
                 applyToSession();
-                nav('/');
+                nav('/explore');
               }}
             >
               Use for this search

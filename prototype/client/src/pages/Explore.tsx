@@ -26,6 +26,8 @@ import { AddressSearch } from '../components/AddressSearch';
 import { Dropdown } from '../components/Dropdown';
 import { OneMapTiles, SG_BOUNDS, SG_CENTER, pinIcon } from '../components/map';
 import { FieldError, Icon, Limitation, Notice, ScorePill, Spinner, scoreTone } from '../components/ui';
+import { Rosette } from '../components/Rosette';
+import { toneFor } from '../components/SurveyMap';
 
 interface Filters {
   q: string;
@@ -55,14 +57,18 @@ function FitToResults({ results, focus }: { results: NeighbourhoodSummary[]; foc
   return null;
 }
 
-function ResultCard({ r, radius, destinationLabel }: { r: NeighbourhoodSummary; radius: number; destinationLabel?: string }) {
+function ResultCard({ r, radius, destinationLabel, index = 0 }: { r: NeighbourhoodSummary; radius: number; destinationLabel?: string; index?: number }) {
   const { shortlistIds, toggleShortlist, compareIds, toggleCompare } = useApp();
   const h = Object.fromEntries(r.highlights.map((x) => [x.category, x])) as Record<AmenityCategory, NeighbourhoodSummary['highlights'][number]>;
   const early = h.childcare.count + h.kindergarten.count;
   const saved = shortlistIds.has(r.id);
   const comparing = compareIds.includes(r.id);
   return (
-    <article className="card overflow-hidden transition-shadow hover:shadow-float" aria-labelledby={`r-${r.id}`}>
+    <article
+      className="card overflow-hidden transition-all duration-300 hover:-translate-y-0.5 hover:shadow-float"
+      style={{ ['--i' as string]: index % 12 }}
+      aria-labelledby={`r-${r.id}`}
+    >
       <div className="flex items-start justify-between gap-3 bg-blush/70 px-5 pt-4 pb-3">
         <div className="min-w-0">
           <p className="eyebrow">Neighbourhood profile</p>
@@ -75,7 +81,10 @@ function ResultCard({ r, radius, destinationLabel }: { r: NeighbourhoodSummary; 
             {r.planningArea} · {r.region}
           </p>
         </div>
-        <ScorePill score={r.score.total} />
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <ScorePill score={r.score.total} />
+          <Rosette values={r.score.breakdown.map((b) => b.normalisedValue)} size={54} tone={toneFor(r.score.total)} />
+        </div>
       </div>
       <div className="px-5 pt-3 pb-4">
         <div className="flex flex-wrap gap-1.5">
@@ -475,12 +484,19 @@ export function ExplorePage() {
               <p className="mt-1 text-sm text-muted">Try a larger radius, fewer family stages, or a different area.</p>
             </div>
           )}
-          <div className="space-y-4">
-            {results.map((r) => (
-              <ResultCard key={r.id} r={r} radius={f.radius} destinationLabel={scoring.destination?.label} />
+          {loading && results.length === 0 && (
+            <div className="space-y-4" aria-hidden="true">
+              {[0, 1, 2].map((k) => (
+                <div key={k} className="skeleton h-48 rounded-lg" />
+              ))}
+            </div>
+          )}
+          <div className="stagger space-y-4">
+            {results.map((r, i) => (
+              <ResultCard key={r.id} r={r} index={i} radius={f.radius} destinationLabel={scoring.destination?.label} />
             ))}
           </div>
-          {loading && <Spinner label="Finding neighbourhoods" />}
+          {loading && results.length > 0 && <Spinner label="Finding neighbourhoods" />}
           {data && results.length < data.total && !loading && (
             <button className="btn-secondary mt-4 w-full" onClick={() => setPage((p) => p + 1)}>
               Load more results ({data.total - results.length} more)

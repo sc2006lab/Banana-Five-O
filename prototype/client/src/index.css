@@ -4,6 +4,8 @@
 /* Warm Institutional design system (Lab 1 UI mockups / DESIGN.md) */
 @theme {
   --font-sans: 'Public Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Instrument Serif', 'Times New Roman', serif;
+  --font-mono: 'DM Mono', ui-monospace, SFMono-Regular, monospace;
 
   --color-burgundy: #461220;
   --color-burgundy-deep: #2a000c;
@@ -18,6 +20,8 @@
   --color-muted: #5d4447;
   --color-line: #d5b9bc;
   --color-line-soft: #f0dfe0;
+  --color-paper: #faf5ef;
+  --color-faint: #e4d6d0;
 
   --color-good: #1d6b3a;
   --color-good-bg: #e3f3e8;
@@ -164,4 +168,241 @@ body {
 }
 .leaflet-control-attribution img {
   display: inline;
+}
+
+/* ───────────────────────── Motion system ("Tender Survey") ───────────────────────── */
+:root {
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 900ms var(--ease-out),
+    transform 900ms var(--ease-out);
+}
+.reveal.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+.page-enter {
+  animation: page-in 520ms var(--ease-out) both;
+}
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.stagger > * {
+  animation: rise 700ms var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 55ms);
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.grow-x {
+  transform-origin: left center;
+  animation: grow-x 1000ms var(--ease-out) both;
+}
+@keyframes grow-x {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+.skeleton {
+  background: linear-gradient(100deg, var(--color-blush) 30%, #fff 50%, var(--color-blush) 70%);
+  background-size: 300% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+@keyframes shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+
+.rosette-petal {
+  transform-box: view-box;
+  transform-origin: 0 0;
+  transition: transform 900ms var(--ease-out);
+}
+.rosette-halo {
+  animation: halo 3.2s var(--ease-in-out) infinite;
+  transform-box: view-box;
+  transform-origin: 0 0;
+}
+@keyframes halo {
+  0%,
+  100% {
+    opacity: 0.9;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* Survey map */
+.survey-map .sm-contour {
+  fill: none;
+  stroke: var(--color-faint);
+  stroke-width: 0.6;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+.survey-map .sm-zone {
+  stroke: var(--color-paper);
+  stroke-width: 0.9;
+  opacity: 0;
+  transition:
+    filter 250ms,
+    stroke 250ms;
+}
+.survey-map .sm-zone.is-hover {
+  stroke: var(--color-cinnabar);
+  stroke-width: 1.6;
+  filter: brightness(0.96);
+}
+.survey-map .sm-points circle {
+  fill: var(--color-burgundy);
+  opacity: 0;
+}
+.survey-map .sm-ring {
+  fill: none;
+  stroke: var(--color-cinnabar);
+  stroke-width: 0.9;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.survey-map .sm-core {
+  fill: var(--color-cinnabar);
+  opacity: 0;
+}
+.survey-map.is-on .sm-contour {
+  animation: draw 1600ms var(--ease-in-out) forwards;
+}
+.survey-map.is-on .sm-zone {
+  animation: settle 1100ms var(--ease-out) forwards;
+}
+.survey-map.is-on .sm-points circle {
+  animation: appear 500ms ease-out forwards;
+}
+.survey-map.is-on .sm-ring {
+  animation:
+    ring-in 1200ms var(--ease-out) forwards,
+    ring-breathe 4.8s var(--ease-in-out) 3.8s infinite;
+}
+.survey-map.is-on .sm-core {
+  animation: appear 400ms ease-out 2.6s forwards;
+}
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes settle {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes appear {
+  to {
+    opacity: 1;
+  }
+}
+@keyframes ring-in {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes ring-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 0.55;
+  }
+}
+
+.marquee {
+  animation: marquee 40s linear infinite;
+}
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.float-slow {
+  animation: float 9s var(--ease-in-out) infinite;
+}
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Survey graticule backdrop */
+.graticule {
+  background-image:
+    linear-gradient(to right, rgba(70, 18, 32, 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(70, 18, 32, 0.045) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse at 60% 40%, black 30%, transparent 75%);
+}
+.graticule-dark {
+  background-image:
+    linear-gradient(to right, rgba(254, 208, 187, 0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(254, 208, 187, 0.07) 1px, transparent 1px);
 }

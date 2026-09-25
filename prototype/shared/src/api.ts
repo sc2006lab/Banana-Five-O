@@ -15,11 +15,52 @@ export interface ApiError {
   fields?: Record<string, string>;
 }
 
+export interface WorkspaceSummary {
+  id: string;
+  name: string;
+  personal: boolean;
+  role: 'OWNER' | 'ADMIN' | 'MEMBER';
+  ownerName: string;
+  plan: 'household' | 'family' | 'advisor';
+  memberCount: number;
+  memberLimit: number;
+  shortlistCount: number;
+  shortlistLimit: number;
+}
+
 export interface Me {
   id: string;
   displayName: string;
   email: string;
   role: 'REGISTERED_USER' | 'DATA_ADMINISTRATOR';
+  plan?: 'household' | 'family' | 'advisor';
+  workspace?: WorkspaceSummary | null;
+}
+
+export interface MemberDto {
+  accountId: string;
+  displayName: string;
+  email: string;
+  role: 'OWNER' | 'ADMIN' | 'MEMBER';
+  joinedAt: string;
+}
+
+export interface InviteDto {
+  id: string;
+  email: string;
+  role: 'ADMIN' | 'MEMBER';
+  createdAt: string;
+  expiresAt: string;
+  link?: string;
+}
+
+export interface BillingDto {
+  plan: 'household' | 'family' | 'advisor';
+  status: 'none' | 'active' | 'past_due' | 'canceled';
+  currentPeriodEnd: string | null;
+  provider: 'stripe' | 'demo';
+  canManage: boolean;
+  usage: { ownedWorkspaces: number; ownedWorkspaceLimit: number };
 }
 
 /** Data Provenance Stamp (NFR-DATA-01). */

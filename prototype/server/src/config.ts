@@ -4,6 +4,8 @@ const env = process.env;
 export const config = {
   port: Number(env.PORT ?? 3001),
   isProduction: env.NODE_ENV === 'production',
+  // Serve behind TLS: secure cookies, HSTS, and HTTP→HTTPS redirects (NFR-SEC-01). Defaults on in production.
+  https: (env.HTTPS ?? (env.NODE_ENV === 'production' ? 'true' : 'false')) === 'true',
   isTest: env.NODE_ENV === 'test' || env.VITEST === 'true',
   appOrigin: env.APP_ORIGIN ?? 'http://localhost:5173',
   sessionTtlHours: 12,
@@ -17,6 +19,16 @@ export const config = {
   onemap: {
     email: env.ONEMAP_EMAIL ?? '',
     password: env.ONEMAP_PASSWORD ?? '',
+  },
+  stripe: {
+    secretKey: env.STRIPE_SECRET_KEY ?? '',
+    webhookSecret: env.STRIPE_WEBHOOK_SECRET ?? '',
+    priceFamily: env.STRIPE_PRICE_FAMILY ?? '',
+    priceAdvisor: env.STRIPE_PRICE_ADVISOR ?? '',
+  },
+  billing: {
+    // Demo mode lets you try plan changes without payment when Stripe is not configured.
+    demo: (env.BILLING_DEMO ?? 'true') === 'true',
   },
   mail: {
     smtpUrl: env.SMTP_URL ?? '',
