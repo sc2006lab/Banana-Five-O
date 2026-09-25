@@ -1,0 +1,30 @@
+# Local production-like stack: `docker compose up --build` then open http://localhost:3001
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: famplan
+      POSTGRES_PASSWORD: famplan
+      POSTGRES_DB: famplan
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U famplan']
+      interval: 5s
+      retries: 10
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - '3001:3001'
+    environment:
+      DATABASE_URL: postgresql://famplan:famplan@db:5432/famplan
+      APP_ORIGIN: http://localhost:3001
+      HTTPS: 'false' # set to true behind a TLS-terminating proxy
+      SYNC_ON_STARTUP: 'true'
+      BILLING_DEMO: 'true'
+      # Add STRIPE_SECRET_KEY / STRIPE_WEBHOOK_SECRET / STRIPE_PRICE_* and ONEMAP_* for production features.
+volumes:
+  pgdata:

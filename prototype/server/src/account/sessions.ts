@@ -28,14 +28,14 @@ export async function createSession(res: Response, accountId: string) {
   res.cookie(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: 'lax',
-    secure: config.isProduction,
+    secure: config.https,
     expires: expiresAt,
     path: '/',
   });
 }
 
 export function clearSessionCookie(res: Response) {
-  res.clearCookie(SESSION_COOKIE, { path: '/', httpOnly: true, sameSite: 'lax', secure: config.isProduction });
+  res.clearCookie(SESSION_COOKIE, { path: '/', httpOnly: true, sameSite: 'lax', secure: config.https });
 }
 
 /** Attach req.user when a valid, unexpired, non-invalidated session cookie is present. */

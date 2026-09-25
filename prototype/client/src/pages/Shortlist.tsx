@@ -6,7 +6,17 @@ import { api, ApiError, fmtDate, fmtDistance, scoringParams } from '../lib/api';
 import { useApp } from '../state/AppState';
 import { FieldError, Icon, Limitation, Notice, ScorePill, Spinner } from '../components/ui';
 
-function Entry({ e, selected, onSelect, onRemoved }: { e: ShortlistEntryDto; selected: boolean; onSelect: () => void; onRemoved: () => void }) {
+type Entry = ShortlistEntryDto & { addedBy?: string };
+interface WorkspaceInfo {
+  id: string;
+  name: string;
+  role: string;
+  plan: string;
+  memberCount: number;
+  canExport: boolean;
+}
+
+function Entry({ e, selected, onSelect, onRemoved, shared }: { e: Entry; selected: boolean; onSelect: () => void; onRemoved: () => void; shared: boolean }) {
   const { toast, refreshShortlist } = useApp();
   const [note, setNote] = useState(e.note);
   const [saving, setSaving] = useState(false);
@@ -38,7 +48,12 @@ function Entry({ e, selected, onSelect, onRemoved }: { e: ShortlistEntryDto; sel
             <h2 id={`s-${e.neighbourhoodId}`} className="text-xl font-semibold text-burgundy">
               {n ? <Link to={`/n/${e.neighbourhoodId}`} className="hover:underline">{n.name}</Link> : e.neighbourhoodId}
             </h2>
-            {n && <span className="block text-sm text-muted">{n.planningArea} · saved {fmtDate(e.addedAt)}</span>}
+            {n && (
+              <span className="block text-sm text-muted">
+                {n.planningArea} · saved {fmtDate(e.addedAt)}
+                {shared && e.addedBy ? ` by ${e.addedBy}` : ''}
+              </span>
+            )}
           </span>
         </label>
         <div className="flex items-center gap-2">
@@ -77,7 +92,8 @@ function Entry({ e, selected, onSelect, onRemoved }: { e: ShortlistEntryDto; sel
       )}
       <div className="mt-4">
         <label className="label" htmlFor={`note-${e.neighbourhoodId}`}>
-          Private note <span className="font-normal text-muted">(only you can see this)</span>
+          {shared ? 'Shared note' : 'Private note'}{' '}
+          <span className="font-normal text-muted">{shared ? '(visible to everyone in this workspace)' : '(only you can see this)'}</span>
         </label>
         <textarea
           id={`note-${e.neighbourhoodId}`}
@@ -113,19 +129,25 @@ function Entry({ e, selected, onSelect, onRemoved }: { e: ShortlistEntryDto; sel
 export function ShortlistPage() {
   const { me, loadingMe, scoring, setCompareIds } = useApp();
   const nav = useNavigate();
-  const [entries, setEntries] = useState<ShortlistEntryDto[] | null>(null);
+  const [entries, setEntries] = useState<Entry[] | null>(null);
+  const [workspace, setWorkspace] = useState<WorkspaceInfo | null>(null);
+  const [max, setMax] = useState(SHORTLIST_MAX);
   const [selected, setSelected] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(() => {
-    api<{ entries: ShortlistEntryDto[] }>(`/shortlist?${scoringParams(scoring)}`)
-      .then((r) => setEntries(r.entries))
+    api<{ entries: Entry[]; workspace: WorkspaceInfo; max: number }>(`/shortlist?${scoringParams(scoring)}`)
+      .then((r) => {
+        setEntries(r.entries);
+        setWorkspace(r.workspace);
+        setMax(r.max);
+      })
       .catch((e) => setError((e as Error).message));
   }, [scoring]);
 
   useEffect(() => {
     if (me) load();
-  }, [me, load]);
+  }, [me, me?.workspace?.id, load]);
 
   if (loadingMe) return <Spinner />;
   if (!me)
@@ -147,11 +169,29 @@ export function ShortlistPage() {
     <div className="mx-auto max-w-4xl px-4 py-8 md:px-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight text-burgundy">Shortlist</h1>
+          {workspace && (
+            <p className="eyebrow flex items-center gap-1.5">
+              <Icon name={workspace.memberCount > 1 ? 'group' : 'person'} className="!text-[14px]" />
+              {workspace.name}
+              {workspace.memberCount > 1 ? ` · shared with ${workspace.memberCount - 1} ${workspace.memberCount === 2 ? 'person' : 'people'}` : ''}
+            </p>
+          )}
+          <h1 className="mt-1 font-display text-5xl text-burgundy">Shortlist</h1>
           <p className="mt-1 text-muted" aria-live="polite">
-            {entries ? `${entries.length} of ${SHORTLIST_MAX} saved` : ''} · select {COMPARE_MIN}–{COMPARE_MAX} to compare
+            {entries ? `${entries.length} of ${max} saved` : ''} · select {COMPARE_MIN}–{COMPARE_MAX} to compare
           </p>
         </div>
+        <div className="flex flex-wrap gap-2">
+        {workspace &&
+          (workspace.canExport ? (
+            <a className="btn-secondary" href={`/api/workspaces/${workspace.id}/export.csv`} download>
+              <Icon name="download" className="!text-[18px]" /> Export CSV
+            </a>
+          ) : (
+            <Link to="/settings/workspace" className="btn-secondary">
+              <Icon name="person_add" className="!text-[18px]" /> Plan together
+            </Link>
+          ))}
         <button
           className="btn-dark"
           disabled={selected.length < COMPARE_MIN}
@@ -163,6 +203,7 @@ export function ShortlistPage() {
           <Icon name="compare_arrows" className="!text-[18px]" />
           Compare selected ({selected.length})
         </button>
+        </div>
       </div>
       {error && <Notice tone="error" className="mt-4">{error}</Notice>}
       {!entries && !error && <Spinner />}
@@ -170,12 +211,19 @@ export function ShortlistPage() {
         <div className="card mt-6 p-8 text-center">
           <p className="font-semibold text-burgundy">Your shortlist is empty.</p>
           <p className="mt-1 text-sm text-muted">Use the heart on any neighbourhood to save it here.</p>
-          <Link to="/" className="btn-primary mt-4">Explore neighbourhoods</Link>
+          <Link to="/explore" className="btn-primary mt-4">Explore neighbourhoods</Link>
         </div>
       )}
-      <div className="mt-6 space-y-4">
+      <div className="stagger mt-6 space-y-4">
         {entries?.map((e) => (
-          <Entry key={e.neighbourhoodId} e={e} selected={selected.includes(e.neighbourhoodId)} onSelect={() => toggle(e.neighbourhoodId)} onRemoved={load} />
+          <Entry
+            key={e.neighbourhoodId}
+            e={e}
+            shared={(workspace?.memberCount ?? 1) > 1}
+            selected={selected.includes(e.neighbourhoodId)}
+            onSelect={() => toggle(e.neighbourhoodId)}
+            onRemoved={load}
+          />
         ))}
       </div>
       <div className="mt-6">

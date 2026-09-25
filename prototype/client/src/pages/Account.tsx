@@ -5,6 +5,7 @@ import { displayNameSchema, type Me } from '@famplan/shared';
 import { api, ApiError } from '../lib/api';
 import { useApp } from '../state/AppState';
 import { FieldError, Icon, Notice } from '../components/ui';
+import { SettingsNav } from '../components/SettingsNav';
 
 export function AccountPage() {
   const { me, setMe, toast } = useApp();
@@ -40,10 +41,12 @@ export function AccountPage() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8 md:px-8">
-      <h1 className="text-4xl font-bold tracking-tight text-burgundy">Account</h1>
+    <div className="mx-auto max-w-4xl px-4 py-8 md:px-8">
+      <h1 className="font-display text-5xl text-burgundy">Settings</h1>
+      <p className="mt-1 mb-6 text-muted">Your personal details and data.</p>
+      <SettingsNav />
 
-      <section className="card mt-6 p-6" aria-labelledby="details-h">
+      <section className="card p-6" aria-labelledby="details-h">
         <h2 id="details-h" className="text-lg font-semibold text-burgundy">Account details</h2>
         <div className="mt-4 space-y-4">
           <div>
@@ -68,7 +71,7 @@ export function AccountPage() {
           <Icon name="warning" /> Delete account
         </h2>
         <p className="mt-2 text-sm text-muted">
-          Permanently deletes your account, saved family preferences, priority destinations, shortlist and private notes. This cannot be undone.
+          Permanently deletes your account, saved family preferences, priority destinations, and every workspace you own with its shortlist and notes. You’ll be removed from workspaces others own. This cannot be undone.
         </p>
         {!confirming ? (
           <button className="btn mt-4 border border-poor text-poor hover:bg-poor-bg" onClick={() => setConfirming(true)}>

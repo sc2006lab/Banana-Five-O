@@ -115,7 +115,7 @@ export function Spinner({ label = 'Loading' }: { label?: string }) {
 export function Bar({ value, className = 'bg-cinnabar', label }: { value: number; className?: string; label?: string }) {
   return (
     <div className="h-1.5 w-full overflow-hidden rounded-full bg-peach/60" role="meter" aria-valuenow={Math.round(value * 100)} aria-valuemin={0} aria-valuemax={100} aria-label={label}>
-      <div className={`h-full rounded-full ${className}`} style={{ width: `${Math.max(0, Math.min(1, value)) * 100}%` }} />
+      <div className={`grow-x h-full rounded-full ${className}`} style={{ width: `${Math.max(0, Math.min(1, value)) * 100}%` }} />
     </div>
   );
 }

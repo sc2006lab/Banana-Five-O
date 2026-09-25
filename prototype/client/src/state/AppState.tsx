@@ -1,6 +1,6 @@
 // Application state via React Context (tech-stack recommendation: no Redux).
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { COMPARE_MAX, DEFAULT_WEIGHTS, type Me, type PreferencesDto } from '@famplan/shared';
+import { COMPARE_MAX, DEFAULT_WEIGHTS, type Me, type PreferencesDto, type WorkspaceSummary } from '@famplan/shared';
 import { api, type ScoringState } from '../lib/api';
 
 interface Toast {
@@ -27,6 +27,9 @@ interface AppStateValue {
   toasts: Toast[];
   toast: (text: string, tone?: Toast['tone']) => void;
   signOut: () => Promise<void>;
+  workspaces: WorkspaceSummary[];
+  refreshWorkspaces: () => Promise<void>;
+  switchWorkspace: (id: string) => Promise<void>;
 }
 
 const Ctx = createContext<AppStateValue | null>(null);
@@ -41,6 +44,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [shortlistIds, setShortlistIds] = useState<Set<string>>(new Set());
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [workspaces, setWorkspaces] = useState<WorkspaceSummary[]>([]);
 
   const toast = useCallback((text: string, tone: Toast['tone'] = 'info') => {
     const id = Date.now() + Math.random();
@@ -78,17 +82,24 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     void refreshMe();
   }, [refreshMe]);
 
+  const refreshWorkspaces = useCallback(async () => {
+    const r = await api<{ workspaces: WorkspaceSummary[] }>('/workspaces');
+    setWorkspaces(r.workspaces);
+  }, []);
+
   // Signed-in users score with their saved profile; visitors use in-memory, unsaved defaults.
   useEffect(() => {
     if (me) {
       void reloadPrefs().catch(() => undefined);
       void refreshShortlist().catch(() => undefined);
+      void refreshWorkspaces().catch(() => undefined);
     } else {
       setPrefs(null);
+      setWorkspaces([]);
       setShortlistIds(new Set());
       setScoring(VISITOR_SCORING);
     }
-  }, [me, reloadPrefs, refreshShortlist]);
+  }, [me?.id, me?.workspace?.id, reloadPrefs, refreshShortlist, refreshWorkspaces]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggleCompare = useCallback(
     (id: string) =>
@@ -125,6 +136,19 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     [me, shortlistIds, refreshShortlist, toast],
   );
 
+  const switchWorkspace = useCallback(
+    async (id: string) => {
+      try {
+        const r = await api<{ name: string }>(`/workspaces/${id}/switch`, { method: 'POST', body: {} });
+        await refreshMe();
+        toast(`Switched to “${r.name}”.`, 'success');
+      } catch (e) {
+        toast((e as Error).message, 'error');
+      }
+    },
+    [refreshMe, toast],
+  );
+
   const signOut = useCallback(async () => {
     await api('/auth/logout', { method: 'POST', body: {} }).catch(() => undefined);
     setMe(null);
@@ -150,8 +174,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       toasts,
       toast,
       signOut,
+      workspaces,
+      refreshWorkspaces,
+      switchWorkspace,
     }),
-    [me, loadingMe, refreshMe, prefs, reloadPrefs, scoring, compareIds, toggleCompare, shortlistIds, refreshShortlist, toggleShortlist, toasts, toast, signOut],
+    [me, loadingMe, refreshMe, prefs, reloadPrefs, scoring, compareIds, toggleCompare, shortlistIds, refreshShortlist, toggleShortlist, toasts, toast, signOut, workspaces, refreshWorkspaces, switchWorkspace],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

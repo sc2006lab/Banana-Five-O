@@ -1,4 +1,4 @@
-# FamPlan — working prototype
+# FamPlan
 
 FamPlan helps Singapore households compare **family neighbourhoods**. It covers nearby childcare, schools, groceries, clinics, parks, public transport, commute and accessibility. Each neighbourhood gets a transparent, user-weighted suitability score.
 
@@ -11,7 +11,22 @@ The prototype follows **SRS v1.3**, the **Lab 2 class diagram** and the **techno
 - node-cron
 - Vitest + Supertest
 
-The UI follows the Lab 1 *Warm Institutional* mockups: the burgundy/cinnabar/peach palette, Public Sans and Material Symbols.
+The UI follows the Lab 1 *Warm Institutional* mockups: the burgundy/cinnabar/peach palette, Public Sans and Material Symbols. The marketing site and animations follow the **Tender Survey** visual direction in [`../design/`](../design/tender-survey-philosophy.md).
+
+## SaaS platform
+
+| Area | What it does |
+|---|---|
+| **Landing page** (`/`) | Animated map built from live data: 332 URA subzones drawn west to east, scored neighbourhoods settling in, 1,949 childcare dots appearing, and pulsing 500 m / 1 km / 2 km rings. Also: a cycling eight-criterion rosette, scroll reveals, count-up stats, a sources marquee, pricing, and the Plate Nº 01 poster. Explore moves to `/explore`. |
+| **Motion system** | `client/src/lib/motion.tsx` (reveal on scroll, count-up, tweened numbers) plus CSS keyframes: page transitions, staggered cards, skeleton loaders, bars that grow, and animated rosettes on results, profiles and comparisons. Everything respects `prefers-reduced-motion`. |
+| **Plans** (`shared/src/plans.ts`) | **Household** (free): 1 person, shortlist of 10, as in the SRS. **Family** (S$6/mo): 4 people, shortlist of 25, CSV export. **Advisor** (S$39/mo): 25 client workspaces, 6 people each. |
+| **Workspaces** | Every account gets a personal workspace. Shortlists and notes belong to the active workspace. Roles are Owner, Admin and Member. Switch workspaces from the user menu. Limits are enforced by both the API and a Postgres trigger. |
+| **Invites** | Single-use, 7-day email links (`/invite?token=`). They can only be accepted by the invited email address, and pending invites count toward the seat limit. |
+| **Billing** (`/settings/billing`) | Stripe Checkout, the billing portal, and signed webhooks, all via Stripe's REST API with no SDK. **Demo mode:** when `STRIPE_SECRET_KEY` is empty, plan changes apply instantly with a clear "no payment taken" label. Downgrades are blocked with an explanation while usage exceeds the smaller plan. |
+| **Admin** | SaaS metrics (accounts, new this week, workspaces, shared workspaces, paid accounts) above the data-sync dashboard. |
+| **Deploy** | `Dockerfile` (multi-stage, non-root, healthcheck, runs migrations on boot) and `docker-compose.yml` (Postgres 16 + app). Set `HTTPS=true` behind TLS to turn on secure cookies, HSTS and HTTP→HTTPS redirects. Routes are code-split: the main bundle is ~77 KB gzipped and the map loads on demand. |
+
+To go live with real payments: create two recurring Prices in Stripe, then set `STRIPE_SECRET_KEY`, `STRIPE_PRICE_FAMILY`, `STRIPE_PRICE_ADVISOR` and `BILLING_DEMO=false`. Point a webhook at `https://<host>/api/billing/webhook` (events `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`) and set `STRIPE_WEBHOOK_SECRET`.
 
 > Scope note: the Lab 1 mockups were drawn for HDB resale flats. The SRS v1.3 baseline is neighbourhood-focused and says FamPlan is *not* a property marketplace. The prototype keeps each mockup's layout and applies it to neighbourhoods. The HFE and financial-roadmap screens are left out, in line with the Lab 2 TODO ("Remove HFE").
 
@@ -38,6 +53,7 @@ Other commands:
 | `npm run test:coverage -w server` | Coverage for the scoring, geo, dedup, validation and transformation modules |
 | `npm run typecheck` | TypeScript check for server and client |
 | `npm run build && npm start` | Production build: Express serves the React app and the API on one port |
+| `docker compose up --build` | Production-like stack (Postgres + app) on http://localhost:3001 |
 
 The server also syncs automatically: daily at 04:00 SGT (`SYNC_CRON`), and at startup when any source has never run or is more than 24 h old.
 

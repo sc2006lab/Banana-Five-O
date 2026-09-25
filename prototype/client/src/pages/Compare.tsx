@@ -18,6 +18,8 @@ import { api, ApiError, fmtDistance, scoringParams } from '../lib/api';
 import { useApp } from '../state/AppState';
 import { ScoreBreakdown } from '../components/ScoreBreakdown';
 import { Icon, Limitation, Notice, ScorePill, Spinner, StateBadge } from '../components/ui';
+import { Rosette } from '../components/Rosette';
+import { toneFor } from '../components/SurveyMap';
 
 type Item = NeighbourhoodSummary & { detail: NeighbourhoodDetail };
 
@@ -126,7 +128,7 @@ export function ComparePage() {
           Select between {COMPARE_MIN} and {COMPARE_MAX} neighbourhoods from Explore or your shortlist, then open the comparison.
           {ids.length === 1 && ' You have selected one so far.'}
         </p>
-        <Link to="/" className="btn-primary mt-6">
+        <Link to="/explore" className="btn-primary mt-6">
           Find neighbourhoods
         </Link>
       </div>
@@ -207,7 +209,10 @@ export function ComparePage() {
             <tbody>
               <Row icon="target" label="Suitability match" items={items} shade render={(i) => (
                 <div>
-                  <ScorePill score={i.score.total} className="mb-3 !text-base" />
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <ScorePill score={i.score.total} className="!text-base" />
+                    <Rosette values={i.score.breakdown.map((b) => b.normalisedValue)} size={72} tone={toneFor(i.score.total)} />
+                  </div>
                   <ScoreBreakdown score={i.score} compact />
                 </div>
               )} />

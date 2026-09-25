@@ -25,7 +25,7 @@ export function SignInPage({ initialTab = 'signin' }: { initialTab?: 'signin' | 
   const { setMe, toast } = useApp();
   const nav = useNavigate();
   const [sp] = useSearchParams();
-  const next = sp.get('next')?.startsWith('/') ? sp.get('next')! : '/';
+  const next = sp.get('next')?.startsWith('/') ? sp.get('next')! : '/explore';
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -43,7 +43,12 @@ export function SignInPage({ initialTab = 'signin' }: { initialTab?: 'signin' | 
       const me = await api<Me>(tab === 'signin' ? '/auth/login' : '/auth/register', { method: 'POST', body: v.data });
       setMe(me);
       toast(tab === 'signin' ? `Welcome back, ${me.displayName}.` : `Account created. Welcome, ${me.displayName}!`, 'success');
-      nav(tab === 'register' ? '/preferences' : next, { replace: true });
+      const plan = sp.get('plan');
+      const hasNext = Boolean(sp.get('next')?.startsWith('/'));
+      nav(
+        tab === 'register' ? (plan ? `/settings/billing?plan=${encodeURIComponent(plan)}` : hasNext ? next : '/preferences') : next,
+        { replace: true },
+      );
     } catch (x) {
       const err = x as ApiError;
       setFields(err.fields);

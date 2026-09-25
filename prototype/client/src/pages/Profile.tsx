@@ -19,6 +19,9 @@ import { useApp } from '../state/AppState';
 import { CategoryLegend, CATEGORY_COLORS, OneMapTiles, SG_BOUNDS, categoryIcon, homeIcon } from '../components/map';
 import { ScoreBreakdown } from '../components/ScoreBreakdown';
 import { Icon, Limitation, Notice, ProvenanceLine, Spinner, StateBadge, scoreTone } from '../components/ui';
+import { Rosette } from '../components/Rosette';
+import { toneFor } from '../components/SurveyMap';
+import { useTweened } from '../lib/motion';
 
 const DEFAULT_LAYERS: AmenityCategory[] = ['childcare', 'kindergarten', 'primary_school', 'secondary_school', 'supermarket', 'clinic', 'park_playground', 'mrt'];
 
@@ -116,8 +119,9 @@ export function ProfilePage() {
   }, [id, radius, scoring]);
 
   const shown = useMemo(() => facilities.filter((f) => layers.includes(f.category)), [facilities, layers]);
+  const tweenedScore = useTweened(detail?.score.total ?? 0, 900);
 
-  if (error) return <div className="mx-auto max-w-xl p-8"><Notice tone="error">{error.message}</Notice><Link to="/" className="btn-secondary mt-4">Back to search</Link></div>;
+  if (error) return <div className="mx-auto max-w-xl p-8"><Notice tone="error">{error.message}</Notice><Link to="/explore" className="btn-secondary mt-4">Back to search</Link></div>;
   if (!detail) return <Spinner label="Loading neighbourhood" />;
   const tone = scoreTone(detail.score.total);
   const saved = shortlistIds.has(detail.id);
@@ -201,7 +205,8 @@ export function ProfilePage() {
             </div>
             <div className={`shrink-0 rounded-lg border border-burgundy/10 px-4 py-2 text-center ${tone.bg}`} title={tone.label}>
               <p className={`text-3xl font-bold ${tone.text}`}>
-                {detail.score.total}
+                <span aria-hidden="true">{tweenedScore}</span>
+                <span className="sr-only">{detail.score.total}</span>
                 <span className="text-base">/100</span>
               </p>
               <p className="text-xs font-semibold text-muted">Family score</p>
@@ -261,6 +266,9 @@ export function ProfilePage() {
                   Edit priorities
                 </Link>
               </p>
+              <div className="mb-4 flex justify-center">
+                <Rosette values={detail.score.breakdown.map((b) => b.normalisedValue)} size={260} labels tone={toneFor(detail.score.total)} />
+              </div>
               <ScoreBreakdown score={detail.score} />
             </div>
           )}

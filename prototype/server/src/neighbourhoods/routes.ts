@@ -17,6 +17,7 @@ import { SCORING_CONFIG, COMMUTE_MODEL } from '../scoring/config.js';
 import { searchAddress } from '../travel/onemap.js';
 import { routeEstimate } from '../travel/route.js';
 import { index } from './store.js';
+import { buildShowcase } from './showcase.js';
 import { facilitiesNear, getNeighbourhood, neighbourhoodDetail, scoringContext, searchNeighbourhoods, summarise } from './service.js';
 
 export const neighbourhoodRouter = Router();
@@ -31,6 +32,11 @@ neighbourhoodRouter.get('/meta', (_req, res) => {
     datasetVersions: index.datasetVersions(),
     indexBuiltAt: index.builtAt.toISOString(),
   });
+});
+
+neighbourhoodRouter.get('/showcase', (_req, res) => {
+  res.set('Cache-Control', 'public, max-age=300');
+  res.json(buildShowcase());
 });
 
 neighbourhoodRouter.get('/areas', (_req, res) => {

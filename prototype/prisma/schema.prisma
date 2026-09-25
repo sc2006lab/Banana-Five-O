@@ -45,11 +45,70 @@ model UserAccount {
   lockedUntil      DateTime?
   createdAt        DateTime      @default(now())
 
-  credential  PasswordCredential?
-  sessions    Session[]
-  resetTokens PasswordResetToken[]
-  preference  FamilyPreferenceProfile?
-  shortlist   ShortlistEntry[]
+  // SaaS subscription (plan applies to every workspace this account owns)
+  plan                 String    @default("household") @db.VarChar(20)
+  subscriptionStatus   String    @default("none") @db.VarChar(20)
+  stripeCustomerId     String?   @unique
+  stripeSubscriptionId String?   @unique
+  currentPeriodEnd     DateTime?
+  activeWorkspaceId    String?   @db.Uuid
+
+  credential      PasswordCredential?
+  sessions        Session[]
+  resetTokens     PasswordResetToken[]
+  preference      FamilyPreferenceProfile?
+  shortlist       ShortlistEntry[]
+  ownedWorkspaces Workspace[]              @relation("WorkspaceOwner")
+  memberships     WorkspaceMember[]
+  sentInvites     WorkspaceInvite[]
+}
+
+// ───────────── Workspaces (SaaS tenancy) ─────────────
+
+model Workspace {
+  id             String   @id @default(uuid()) @db.Uuid
+  name           String   @db.VarChar(60)
+  ownerId        String   @db.Uuid
+  personal       Boolean  @default(false)
+  // Denormalised from the owner's plan so the database can enforce capacity (trigger in migration)
+  shortlistLimit Int      @default(10)
+  memberLimit    Int      @default(1)
+  createdAt      DateTime @default(now())
+
+  owner     UserAccount       @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members   WorkspaceMember[]
+  invites   WorkspaceInvite[]
+  shortlist ShortlistEntry[]
+
+  @@index([ownerId])
+}
+
+model WorkspaceMember {
+  workspaceId String      @db.Uuid
+  accountId   String      @db.Uuid
+  role        String      @default("MEMBER") @db.VarChar(10)
+  joinedAt    DateTime    @default(now())
+  workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  account     UserAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@id([workspaceId, accountId])
+  @@index([accountId])
+}
+
+model WorkspaceInvite {
+  id          String      @id @default(uuid()) @db.Uuid
+  workspaceId String      @db.Uuid
+  email       String      @db.VarChar(254)
+  role        String      @default("MEMBER") @db.VarChar(10)
+  tokenHash   String      @unique
+  invitedById String      @db.Uuid
+  createdAt   DateTime    @default(now())
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  invitedBy   UserAccount @relation(fields: [invitedById], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
 }
 
 model PasswordCredential {
@@ -170,15 +229,18 @@ model GeocodeCache {
 
 model ShortlistEntry {
   id              String        @id @default(uuid()) @db.Uuid
-  accountId       String        @db.Uuid
+  workspaceId     String        @db.Uuid
+  accountId       String        @db.Uuid // who added it
   neighbourhoodId String        @db.VarChar(12)
   addedAt         DateTime      @default(now())
   note            String        @default("") @db.VarChar(500)
   noteUpdatedAt   DateTime?
+  workspace       Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   account         UserAccount   @relation(fields: [accountId], references: [id], onDelete: Cascade)
   neighbourhood   Neighbourhood @relation(fields: [neighbourhoodId], references: [id], onDelete: Cascade)
 
-  @@unique([accountId, neighbourhoodId])
+  @@unique([workspaceId, neighbourhoodId])
+  @@index([accountId])
 }
 
 // ───────────── Data synchronisation & provenance ─────────────

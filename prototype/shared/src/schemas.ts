@@ -297,3 +297,24 @@ export const scoringParamsSchema = z
         ctx.addIssue({ code: 'custom', path: [`w_${c}`], message: `Weight for ${c.replace('_', ' ')} must be between 0 and 5.` });
     }
   });
+
+export const workspaceNameSchema = z.object({
+  name: z.string().trim().min(1, 'Give the workspace a name.').max(60, 'Workspace names must be at most 60 characters.').regex(/^[^<>]*$/, 'Names cannot contain < or >.'),
+});
+
+export const inviteSchema = z.object({
+  email: emailSchema,
+  role: z.enum(['ADMIN', 'MEMBER'], 'Role must be Admin or Member.').default('MEMBER'),
+});
+
+export const acceptInviteSchema = z.object({
+  token: z.string().regex(/^[A-Za-z0-9_-]{20,128}$/, 'This invite link is invalid.'),
+});
+
+export const checkoutSchema = z.object({
+  plan: z.enum(['household', 'family', 'advisor'], 'Choose a plan.'),
+});
+
+export const memberRoleSchema = z.object({
+  role: z.enum(['ADMIN', 'MEMBER'], 'Role must be Admin or Member.'),
+});
