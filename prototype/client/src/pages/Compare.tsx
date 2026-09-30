@@ -108,10 +108,13 @@ export function ComparePage() {
 
   useEffect(() => {
     if (!me) return setNotes({});
-    api<{ entries: ShortlistEntryDto[] }>('/shortlist')
-      .then((r) => setNotes(Object.fromEntries(r.entries.map((e) => [e.neighbourhoodId, e.note]))))
-      .catch(() => undefined);
-  }, [me, shortlistIds]);
+    setNotes({});
+    const controller = new AbortController();
+    api<{ entries: ShortlistEntryDto[] }>('/shortlist', { signal: controller.signal })
+      .then((r) => { if (!controller.signal.aborted) setNotes(Object.fromEntries(r.entries.map((e) => [e.neighbourhoodId, e.note]))); })
+      .catch((error: Error) => { if (!controller.signal.aborted) toast(error.message, 'error'); });
+    return () => controller.abort();
+  }, [me?.id, shortlistIds, toast]);
 
   const remove = (id: string) => {
     const next = ids.filter((x) => x !== id);
@@ -176,7 +179,7 @@ export function ComparePage() {
       {error && <Notice tone="error" className="mt-4">{error}</Notice>}
       {!items && !error && <Spinner label="Comparing" />}
       {items && (
-        <div className="card mt-6 overflow-x-auto">
+        <div className="card mt-6 overflow-x-auto" tabIndex={0} role="region" aria-label="Neighbourhood comparison table; scroll horizontally to view all choices">
           <table className="w-full min-w-[720px] border-collapse">
             <caption className="sr-only">Side-by-side comparison of family amenities, commute, accessibility and scores</caption>
             <thead>

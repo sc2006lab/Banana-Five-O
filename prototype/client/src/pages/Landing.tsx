@@ -1,7 +1,7 @@
 // Marketing landing page — the "Tender Survey" plate brought to life with live data.
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CRITERIA, CRITERION_ICONS, CRITERION_LABELS, PLANS, PLAN_IDS } from '@famplan/shared';
+import { CRITERIA, CRITERION_ICONS, CRITERION_LABELS } from '@famplan/shared';
 import { api } from '../lib/api';
 import { CountUp, Reveal, useTweened, usePrefersReducedMotion } from '../lib/motion';
 import { Rosette } from '../components/Rosette';
@@ -22,28 +22,28 @@ const SOURCES = [
 ];
 
 const CRITERION_COPY: Record<(typeof CRITERIA)[number], string> = {
-  childcare: 'Childcare and kindergartens within your chosen walk.',
+  childcare: 'Childcare and kindergartens within your chosen straight-line radius.',
   schools: 'Primary and secondary schools nearby.',
   groceries: 'Distance to the nearest supermarket.',
   healthcare: 'Distance to the nearest CHAS clinic.',
   green_spaces: 'Parks and playgrounds within reach.',
-  public_transport: 'Walk to the nearest MRT or LRT station.',
+  public_transport: 'Straight-line distance to the nearest MRT or LRT station.',
   commute: 'Estimated trip to work or grandparents.',
-  accessibility: 'Bus stops within a short, step-free walk.',
+  accessibility: 'Nearby bus stops as a transport-access proxy; step-free access is not verified.',
 };
 
 function Eyebrow({ children, className = '' }: { children: string; className?: string }) {
   return <p className={`font-mono text-[11px] tracking-[0.28em] text-muted uppercase ${className}`}>{children}</p>;
 }
 
-function Hero({ data }: { data: Showcase | null }) {
+function Hero({ data, error }: { data: Showcase | null; error: string | null }) {
   return (
     <section className="relative overflow-hidden border-b border-line-soft bg-paper">
       <div className="graticule pointer-events-none absolute inset-0" aria-hidden="true" />
       <div className="relative mx-auto grid max-w-[1440px] items-center gap-10 px-4 pt-14 pb-16 md:px-10 lg:grid-cols-12 lg:pt-20 lg:pb-24">
         <div className="lg:col-span-5">
           <Reveal>
-            <Eyebrow>Tender survey · Singapore · Plate Nº 01</Eyebrow>
+            <Eyebrow>Family neighbourhood planning · Singapore</Eyebrow>
           </Reveal>
           <Reveal delay={80}>
             <h1 className="mt-5 font-display text-[44px] leading-[1.02] tracking-tight text-burgundy sm:text-6xl xl:text-7xl">
@@ -52,7 +52,7 @@ function Hero({ data }: { data: Showcase | null }) {
           </Reveal>
           <Reveal delay={180}>
             <p className="mt-6 max-w-lg text-lg leading-8 text-muted">
-              FamPlan surveys every childcare centre, school, clinic, park and station in Singapore, then scores each neighbourhood against
+              FamPlan uses available public data on childcare, schools, supermarkets, clinics, parks and transport to compare neighbourhoods against
               <em> your</em> priorities, and shows exactly how.
             </p>
           </Reveal>
@@ -68,15 +68,15 @@ function Hero({ data }: { data: Showcase | null }) {
           <Reveal delay={340}>
             <dl className="mt-12 grid max-w-lg grid-cols-3 gap-6 border-t border-line pt-6">
               {[
-                [data?.stats.neighbourhoods ?? 170, 'family neighbourhoods'],
-                [data?.stats.facilities ?? 9898, 'facilities surveyed'],
-                [data?.stats.datasets ?? 9, 'public datasets, daily'],
+                [data?.stats.neighbourhoods, 'family neighbourhoods'],
+                [data?.stats.facilities, 'facilities surveyed'],
+                [data?.stats.datasets, 'datasets available'],
               ].map(([n, label]) => (
                 <div key={label as string}>
                   <dt className="sr-only">{label}</dt>
                   <dd>
                     <span className="block font-display text-4xl text-burgundy">
-                      <CountUp to={n as number} />
+                      {typeof n === 'number' ? <CountUp to={n} /> : '—'}
                     </span>
                     <span className="mt-1 block font-mono text-[11px] tracking-wider text-muted uppercase">{label}</span>
                   </dd>
@@ -90,7 +90,7 @@ function Hero({ data }: { data: Showcase | null }) {
             {data ? (
               <SurveyMap data={data} />
             ) : (
-              <div className="skeleton aspect-[1000/629] w-full rounded-lg" aria-label="Loading map" />
+              error ? <div role="status" className="card p-8 text-muted">{error} You can still set your family preferences and try Explore.</div> : <div className="skeleton aspect-[1000/629] w-full rounded-lg" aria-label="Loading map" />
             )}
             <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2" aria-label="Legend: warmth of fit">
@@ -132,16 +132,10 @@ function SourcesMarquee() {
 }
 
 function EightMeasures({ data }: { data: Showcase | null }) {
-  const reduced = usePrefersReducedMotion();
   const picks: ShowcaseZone[] = data
     ? [...data.zones.filter((z) => z.family && z.petals)].sort((a, b) => (b.score ?? 0) - (a.score ?? 0)).filter((_, i) => i % 29 === 0).slice(0, 5)
     : [];
   const [i, setI] = useState(0);
-  useEffect(() => {
-    if (!picks.length || reduced) return;
-    const t = setInterval(() => setI((x) => (x + 1) % picks.length), 3600);
-    return () => clearInterval(t);
-  }, [picks.length, reduced]);
   const z = picks[i];
   const score = useTweened(z?.score ?? 0);
   return (
@@ -161,12 +155,11 @@ function EightMeasures({ data }: { data: Showcase | null }) {
               <p className="font-mono text-xs tracking-widest text-muted uppercase">
                 {z.planningArea} · score <span className="text-cinnabar">{score}</span>
               </p>
-              <div className="mt-3 flex justify-center gap-1.5" role="tablist" aria-label="Example neighbourhoods">
+              <div className="mt-3 flex justify-center gap-1.5" role="group" aria-label="Example neighbourhoods">
                 {picks.map((p, k) => (
                   <button
                     key={p.id}
-                    role="tab"
-                    aria-selected={k === i}
+                    aria-pressed={k === i}
                     aria-label={p.name}
                     onClick={() => setI(k)}
                     className={`h-1.5 rounded-full transition-all duration-500 ${k === i ? 'w-8 bg-cinnabar' : 'w-3 bg-line'}`}
@@ -218,7 +211,7 @@ function HowItWorks() {
       n: '02',
       icon: 'travel_explore',
       title: 'We survey the city',
-      body: 'Nine public datasets, validated every night. If a source fails, yesterday’s verified data stays live.',
+      body: 'Public datasets are checked automatically. If a source fails, the last validated data stays available, with freshness and coverage warnings.',
     },
     {
       n: '03',
@@ -248,92 +241,6 @@ function HowItWorks() {
             </Reveal>
           ))}
         </ol>
-      </div>
-    </section>
-  );
-}
-
-function Plate() {
-  return (
-    <section className="bg-surface-warm">
-      <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-4 py-24 md:px-10 lg:grid-cols-12">
-        <Reveal className="lg:col-span-5">
-          <Eyebrow>From the archive</Eyebrow>
-          <h2 className="mt-4 font-display text-5xl leading-[1.05] text-burgundy">
-            Every neighbourhood, <em>on one sheet.</em>
-          </h2>
-          <p className="mt-5 text-muted">
-            Plate Nº 01 lays out all 332 URA subzones, 1,949 centres of early care, and a ranked ledger of 170 family neighbourhoods. It is drawn
-            from the same live data you search.
-          </p>
-          <p className="mt-8 font-display text-2xl text-cinnabar italic">“proximity is not a promise”</p>
-          <p className="mt-2 text-sm text-muted">
-            Being near a school or centre never guarantees admission or a vacancy. We say so on every page.
-          </p>
-        </Reveal>
-        <Reveal delay={150} className="lg:col-span-7">
-          <figure className="float-slow mx-auto max-w-[520px] rotate-[-1.2deg] bg-white p-3 shadow-[0_30px_60px_-20px_rgba(70,18,32,0.35)]">
-            <img
-              src="/img/plate-01.jpg"
-              alt="Tender Survey Plate Nº 01: Singapore's subzones shaded by family suitability, with a ranked ledger of rosettes below."
-              className="block h-auto w-full"
-              loading="lazy"
-              width={1400}
-              height={1980}
-            />
-          </figure>
-        </Reveal>
-      </div>
-    </section>
-  );
-}
-
-function Pricing() {
-  return (
-    <section id="pricing" className="border-t border-line-soft bg-paper">
-      <div className="mx-auto max-w-[1200px] px-4 py-24 md:px-10">
-        <Reveal className="mx-auto max-w-2xl text-center">
-          <Eyebrow>Plans</Eyebrow>
-          <h2 className="mt-4 font-display text-5xl leading-[1.05] text-burgundy">Free for families. Built for advisors.</h2>
-          <p className="mt-4 text-muted">Every plan uses the same data and the same transparent scoring. Upgrade only to plan together.</p>
-        </Reveal>
-        <div className="mt-14 grid gap-6 lg:grid-cols-3">
-          {PLAN_IDS.map((id, k) => {
-            const p = PLANS[id];
-            return (
-              <Reveal
-                key={id}
-                delay={k * 120}
-                className={`relative flex flex-col rounded-xl border p-7 transition-transform duration-500 hover:-translate-y-1 ${
-                  p.highlight ? 'border-burgundy bg-burgundy text-white shadow-float' : 'border-burgundy/10 bg-white'
-                }`}
-              >
-                {p.highlight && <span className="absolute -top-3 left-7 rounded-full bg-cinnabar px-3 py-1 font-mono text-[10px] tracking-widest text-white uppercase">Most loved</span>}
-                <h3 className={`font-display text-3xl ${p.highlight ? 'text-peach' : 'text-burgundy'}`}>{p.name}</h3>
-                <p className={`mt-1 text-sm ${p.highlight ? 'text-white/75' : 'text-muted'}`}>{p.tagline}</p>
-                <p className="mt-6 flex items-baseline gap-1">
-                  <span className="font-display text-5xl">{p.priceMonthlySgd === 0 ? 'Free' : `S$${p.priceMonthlySgd}`}</span>
-                  {p.priceMonthlySgd > 0 && <span className={`text-sm ${p.highlight ? 'text-white/70' : 'text-muted'}`}>/ month</span>}
-                </p>
-                <ul className="mt-6 flex-1 space-y-2.5 text-sm">
-                  {p.features.map((f) => (
-                    <li key={f} className="flex gap-2">
-                      <Icon name="check" className={`!text-[18px] ${p.highlight ? 'text-salmon' : 'text-cinnabar'}`} />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  to={p.priceMonthlySgd === 0 ? '/register' : `/register?plan=${p.id}`}
-                  className={`mt-8 ${p.highlight ? 'btn bg-peach text-burgundy hover:bg-salmon' : 'btn-secondary'} w-full py-3`}
-                >
-                  {p.priceMonthlySgd === 0 ? 'Start free' : `Choose ${p.name}`}
-                </Link>
-              </Reveal>
-            );
-          })}
-        </div>
-        <p className="mt-6 text-center text-xs text-muted">Prices in SGD, billed monthly. Cancel any time. Your household plan stays free forever.</p>
       </div>
     </section>
   );
@@ -376,7 +283,7 @@ function FinalCta() {
       <div className="relative mx-auto flex max-w-[1200px] flex-col items-start gap-8 px-4 py-24 md:flex-row md:items-end md:justify-between md:px-10">
         <Reveal>
           <h2 className="max-w-2xl font-display text-5xl leading-[1.05] text-peach md:text-6xl">
-            Start your survey. <em className="text-salmon">It takes a minute.</em>
+            Plan your next chapter. <em className="text-salmon">Start with your family.</em>
           </h2>
         </Reveal>
         <Reveal delay={120} className="flex flex-wrap gap-3">
@@ -408,7 +315,7 @@ function SiteFooter() {
           <p className="font-mono text-[11px] tracking-widest text-burgundy uppercase">Product</p>
           <ul className="mt-3 space-y-2">
             <li><Link to="/explore" className="hover:text-burgundy">Explore</Link></li>
-            <li><Link to="/pricing" className="hover:text-burgundy">Pricing</Link></li>
+            <li><Link to="/shortlist" className="hover:text-burgundy">Your shortlist</Link></li>
             <li><Link to="/preferences" className="hover:text-burgundy">Family preferences</Link></li>
           </ul>
         </nav>
@@ -426,23 +333,26 @@ function SiteFooter() {
 
 export function LandingPage() {
   const [data, setData] = useState<Showcase | null>(null);
+  const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     document.title = 'FamPlan: find the neighbourhood that fits your family';
-    api<Showcase>('/showcase').then(setData).catch(() => undefined);
+    const controller = new AbortController();
+    api<Showcase>('/showcase', { signal: controller.signal }).then(setData).catch((e: Error) => {
+      if (!controller.signal.aborted) setError(e.message);
+    });
+    return () => controller.abort();
   }, []);
   return (
     <div className="bg-surface-warm">
-      <Hero data={data} />
+      <Hero data={data} error={error} />
       <SourcesMarquee />
-      <EightMeasures data={data} />
+      {data && <EightMeasures data={data} />}
       <HowItWorks />
-      <Plate />
       <Honesty />
-      <Pricing />
       <FinalCta />
       <SiteFooter />
     </div>
   );
 }
 
-export { Pricing as PricingSection, SiteFooter };
+export { SiteFooter };

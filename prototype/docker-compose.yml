@@ -24,7 +24,6 @@ services:
       APP_ORIGIN: http://localhost:3001
       HTTPS: 'false' # set to true behind a TLS-terminating proxy
       SYNC_ON_STARTUP: 'true'
-      BILLING_DEMO: 'true'
-      # Add STRIPE_SECRET_KEY / STRIPE_WEBHOOK_SECRET / STRIPE_PRICE_* and ONEMAP_* for production features.
+      # Add ONEMAP_EMAIL / ONEMAP_PASSWORD for routing and SMTP_URL / MAIL_FROM for password resets.
 volumes:
   pgdata:

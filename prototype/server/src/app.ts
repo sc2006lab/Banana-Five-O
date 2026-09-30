@@ -13,8 +13,6 @@ import { neighbourhoodRouter } from './neighbourhoods/routes.js';
 import { preferencesRouter } from './preferences/routes.js';
 import { shortlistRouter } from './shortlist/routes.js';
 import { adminRouter } from './synchronisation/routes.js';
-import { billingRouter, stripeWebhook } from './billing/routes.js';
-import { workspaceRouter } from './workspaces/routes.js';
 
 /** CSRF defence: state-changing API calls must be JSON (cross-site forms cannot send it without CORS preflight). */
 function requireJsonForMutations(req: Request, _res: Response, next: NextFunction) {
@@ -45,8 +43,6 @@ export function createApp() {
     }),
   );
   app.use(compression());
-  // Stripe needs the raw body to verify signatures, so the webhook is mounted before the JSON parser.
-  app.post('/api/billing/webhook', ...stripeWebhook);
   app.use(express.json({ limit: '32kb' }));
   app.use(cookieParser());
 
@@ -58,8 +54,6 @@ export function createApp() {
   api.use(preferencesRouter);
   api.use(neighbourhoodRouter);
   api.use(shortlistRouter);
-  api.use(workspaceRouter);
-  api.use(billingRouter);
   api.use(adminRouter);
   api.use((_req, _res, next) => next(new HttpError(404, 'Unknown API endpoint.')));
   app.use('/api', api);

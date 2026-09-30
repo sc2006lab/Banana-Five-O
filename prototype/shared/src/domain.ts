@@ -1,4 +1,4 @@
-// Shared domain vocabulary (SRS v1.3 §6 Data Dictionary) and business rules (§5.24).
+// Shared domain vocabulary and business rules: local SRS V1.1 is the requirements baseline.
 
 export const FAMILY_STAGES = [
   'expecting_child',

@@ -42,10 +42,6 @@ export function AdminPage() {
   const [history, setHistory] = useState<SyncHistoryDto[] | null>(null);
   const [filter, setFilter] = useState({ source: '', from: '', to: '' });
   const [err, setErr] = useState<ApiError | null>(null);
-  const [metrics, setMetrics] = useState<{ accounts: number; workspaces: number; sharedWorkspaces: number; newAccounts7d: number; plans: Record<string, number> } | null>(null);
-  useEffect(() => {
-    api<NonNullable<typeof metrics>>('/admin/metrics').then(setMetrics).catch(() => undefined);
-  }, []);
 
   const loadSources = () =>
     api<{ sources: DataSourceStatusDto[]; live: LiveDep }>('/admin/sources')
@@ -90,22 +86,6 @@ export function AdminPage() {
         </div>
       </div>
       {err && <Notice tone="error" className="mt-4">{err.message}</Notice>}
-      {metrics && (
-        <dl className="stagger mt-6 grid grid-cols-2 gap-3 md:grid-cols-5" aria-label="Platform metrics">
-          {[
-            ['Accounts', metrics.accounts],
-            ['New this week', metrics.newAccounts7d],
-            ['Workspaces', metrics.workspaces],
-            ['Shared workspaces', metrics.sharedWorkspaces],
-            ['Paid accounts', (metrics.plans.family ?? 0) + (metrics.plans.advisor ?? 0)],
-          ].map(([k, v], i) => (
-            <div key={k as string} className="card p-4" style={{ ['--i' as string]: i }}>
-              <dt className="font-mono text-[10px] tracking-widest text-muted uppercase">{k}</dt>
-              <dd className="mt-1 font-display text-4xl text-burgundy">{(v as number).toLocaleString()}</dd>
-            </div>
-          ))}
-        </dl>
-      )}
       {!sources && !err && <Spinner />}
 
       {sources && (

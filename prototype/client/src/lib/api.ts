@@ -30,7 +30,12 @@ export async function api<T>(path: string, init: { method?: string; body?: unkno
     throw new ApiError(0, 'Cannot reach FamPlan. Check your connection and try again.');
   }
   const text = await res.text();
-  const body = text ? JSON.parse(text) : null;
+  let body;
+  try {
+    body = text ? JSON.parse(text) : null;
+  } catch {
+    throw new ApiError(res.status, 'FamPlan returned an unexpected response. Please try again shortly.');
+  }
   if (!res.ok) throw new ApiError(res.status, body?.error ?? `Request failed (${res.status}).`, body?.fields ?? {});
   return body as T;
 }

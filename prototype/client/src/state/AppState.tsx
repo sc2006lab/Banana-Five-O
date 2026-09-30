@@ -1,6 +1,6 @@
 // Application state via React Context (tech-stack recommendation: no Redux).
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { COMPARE_MAX, DEFAULT_WEIGHTS, type Me, type PreferencesDto, type WorkspaceSummary } from '@famplan/shared';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { COMPARE_MAX, DEFAULT_WEIGHTS, type Me, type PreferencesDto } from '@famplan/shared';
 import { api, type ScoringState } from '../lib/api';
 
 interface Toast {
@@ -27,9 +27,6 @@ interface AppStateValue {
   toasts: Toast[];
   toast: (text: string, tone?: Toast['tone']) => void;
   signOut: () => Promise<void>;
-  workspaces: WorkspaceSummary[];
-  refreshWorkspaces: () => Promise<void>;
-  switchWorkspace: (id: string) => Promise<void>;
 }
 
 const Ctx = createContext<AppStateValue | null>(null);
@@ -37,33 +34,69 @@ const Ctx = createContext<AppStateValue | null>(null);
 const VISITOR_SCORING: ScoringState = { weights: { ...DEFAULT_WEIGHTS }, thresholds: {}, destination: null };
 
 export function AppStateProvider({ children }: { children: ReactNode }) {
-  const [me, setMe] = useState<Me | null>(null);
+  const [me, setMeState] = useState<Me | null>(null);
   const [loadingMe, setLoadingMe] = useState(true);
   const [prefs, setPrefs] = useState<PreferencesDto | null>(null);
   const [scoring, setScoring] = useState<ScoringState>(VISITOR_SCORING);
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [shortlistIds, setShortlistIds] = useState<Set<string>>(new Set());
   const [toasts, setToasts] = useState<Toast[]>([]);
-  const [workspaces, setWorkspaces] = useState<WorkspaceSummary[]>([]);
+
+  const identity = useRef<{ id: string | null; version: number }>({ id: null, version: 0 });
+  const mounted = useRef(true);
+  const timers = useRef(new Set<ReturnType<typeof setTimeout>>());
+  const pendingSaves = useRef(new Set<string>());
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      for (const timer of timers.current) clearTimeout(timer);
+      timers.current.clear();
+    };
+  }, []);
+
+  const setMe = useCallback((next: Me | null) => {
+    if (identity.current.id !== (next?.id ?? null)) {
+      identity.current = { id: next?.id ?? null, version: identity.current.version + 1 };
+      setPrefs(null);
+      setShortlistIds(new Set());
+      setCompareIds([]);
+      setScoring(VISITOR_SCORING);
+      setToasts([]);
+      pendingSaves.current.clear();
+    }
+    setMeState(next);
+  }, []);
 
   const toast = useCallback((text: string, tone: Toast['tone'] = 'info') => {
     const id = Date.now() + Math.random();
     setToasts((t) => [...t, { id, text, tone }]);
-    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 4500);
+    const timer = setTimeout(() => {
+      setToasts((t) => t.filter((x) => x.id !== id));
+      timers.current.delete(timer);
+    }, 4500);
+    timers.current.add(timer);
   }, []);
 
   const refreshMe = useCallback(async () => {
+    const version = identity.current.version;
     try {
-      setMe(await api<Me | null>('/auth/me'));
+      const next = await api<Me | null>('/auth/me');
+      if (mounted.current && identity.current.version === version) setMe(next);
     } catch {
-      setMe(null);
+      if (mounted.current && identity.current.version === version) {
+        toast('We could not check your session. Please reload before making account changes.', 'error');
+      }
     } finally {
-      setLoadingMe(false);
+      if (mounted.current) setLoadingMe(false);
     }
-  }, []);
+  }, [setMe, toast]);
 
   const reloadPrefs = useCallback(async () => {
+    const version = identity.current.version;
+    if (!identity.current.id) return;
     const p = await api<PreferencesDto>('/preferences');
+    if (!mounted.current || identity.current.version !== version) return;
     setPrefs(p);
     const d = p.destinations[0];
     setScoring({
@@ -74,7 +107,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshShortlist = useCallback(async () => {
+    const version = identity.current.version;
+    if (!identity.current.id) return;
     const r = await api<{ entries: { neighbourhoodId: string }[] }>('/shortlist');
+    if (!mounted.current || identity.current.version !== version) return;
     setShortlistIds(new Set(r.entries.map((e) => e.neighbourhoodId)));
   }, []);
 
@@ -82,37 +118,25 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     void refreshMe();
   }, [refreshMe]);
 
-  const refreshWorkspaces = useCallback(async () => {
-    const r = await api<{ workspaces: WorkspaceSummary[] }>('/workspaces');
-    setWorkspaces(r.workspaces);
-  }, []);
-
-  // Signed-in users score with their saved profile; visitors use in-memory, unsaved defaults.
+  // Guard late responses: private data from an old session must not populate a new one.
   useEffect(() => {
-    if (me) {
-      void reloadPrefs().catch(() => undefined);
-      void refreshShortlist().catch(() => undefined);
-      void refreshWorkspaces().catch(() => undefined);
-    } else {
-      setPrefs(null);
-      setWorkspaces([]);
-      setShortlistIds(new Set());
-      setScoring(VISITOR_SCORING);
+    const version = identity.current.version;
+    const report = (error: Error) => {
+      if (mounted.current && identity.current.version === version) toast(error.message, 'error');
+    };
+    if (me?.id) {
+      void reloadPrefs().catch(report);
+      void refreshShortlist().catch(report);
     }
-  }, [me?.id, me?.workspace?.id, reloadPrefs, refreshShortlist, refreshWorkspaces]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [me?.id, reloadPrefs, refreshShortlist, toast]);
 
-  const toggleCompare = useCallback(
-    (id: string) =>
-      setCompareIds((ids) => {
-        if (ids.includes(id)) return ids.filter((x) => x !== id);
-        if (ids.length >= COMPARE_MAX) {
-          toast(`You can compare at most ${COMPARE_MAX} neighbourhoods. Remove one first.`, 'error');
-          return ids;
-        }
-        return [...ids, id];
-      }),
-    [toast],
-  );
+  const toggleCompare = useCallback((id: string) => {
+    if (!compareIds.includes(id) && compareIds.length >= COMPARE_MAX) {
+      toast(`You can compare at most ${COMPARE_MAX} neighbourhoods. Remove one first.`, 'error');
+      return;
+    }
+    setCompareIds((ids) => ids.includes(id) ? ids.filter((x) => x !== id) : ids.length < COMPARE_MAX ? [...ids, id] : ids);
+  }, [compareIds, toast]);
 
   const toggleShortlist = useCallback(
     async (id: string, name?: string) => {
@@ -120,40 +144,34 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         toast('Sign in to save neighbourhoods to your shortlist.', 'info');
         return;
       }
+      if (pendingSaves.current.has(id)) return;
+      pendingSaves.current.add(id);
+      const version = identity.current.version;
       try {
         if (shortlistIds.has(id)) {
           await api(`/shortlist/${id}`, { method: 'DELETE', body: {} });
+          if (identity.current.version !== version) return;
           toast(`${name ?? 'Neighbourhood'} removed from your shortlist.`, 'success');
         } else {
           const r = await api<{ status: string; message: string }>('/shortlist', { method: 'POST', body: { neighbourhoodId: id } });
+          if (identity.current.version !== version) return;
           toast(r.status === 'ADDED' ? `${name ?? 'Neighbourhood'} added to your shortlist.` : r.message, 'success');
         }
         await refreshShortlist();
       } catch (e) {
-        toast((e as Error).message, 'error');
+        if (identity.current.version === version) toast((e as Error).message, 'error');
+      } finally {
+        if (identity.current.version === version) pendingSaves.current.delete(id);
       }
     },
     [me, shortlistIds, refreshShortlist, toast],
   );
 
-  const switchWorkspace = useCallback(
-    async (id: string) => {
-      try {
-        const r = await api<{ name: string }>(`/workspaces/${id}/switch`, { method: 'POST', body: {} });
-        await refreshMe();
-        toast(`Switched to “${r.name}”.`, 'success');
-      } catch (e) {
-        toast((e as Error).message, 'error');
-      }
-    },
-    [refreshMe, toast],
-  );
-
   const signOut = useCallback(async () => {
-    await api('/auth/logout', { method: 'POST', body: {} }).catch(() => undefined);
+    await api('/auth/logout', { method: 'POST', body: {} });
     setMe(null);
     toast('You have been signed out.', 'success');
-  }, [toast]);
+  }, [setMe, toast]);
 
   const value = useMemo(
     () => ({
@@ -174,11 +192,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       toasts,
       toast,
       signOut,
-      workspaces,
-      refreshWorkspaces,
-      switchWorkspace,
     }),
-    [me, loadingMe, refreshMe, prefs, reloadPrefs, scoring, compareIds, toggleCompare, shortlistIds, refreshShortlist, toggleShortlist, toasts, toast, signOut, workspaces, refreshWorkspaces, switchWorkspace],
+    [me, loadingMe, setMe, refreshMe, prefs, reloadPrefs, scoring, compareIds, toggleCompare, shortlistIds, refreshShortlist, toggleShortlist, toasts, toast, signOut],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

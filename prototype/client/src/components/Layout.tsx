@@ -17,7 +17,7 @@ function NavItem({ to, children }: { to: string; children: string }) {
 }
 
 function UserMenu() {
-  const { me, signOut, switchWorkspace, workspaces } = useApp();
+  const { me, signOut, toast } = useApp();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const nav = useNavigate();
@@ -43,39 +43,15 @@ function UserMenu() {
         <span className="flex h-7 w-7 items-center justify-center rounded-full bg-peach text-burgundy">{me.displayName.slice(0, 1).toUpperCase()}</span>
         <span className="hidden max-w-40 flex-col items-start leading-tight sm:flex">
           <span className="max-w-40 truncate">{me.displayName}</span>
-          {me.workspace && <span className="max-w-40 truncate text-[10px] font-normal text-muted">{me.workspace.name}</span>}
         </span>
         <Icon name="expand_more" className="!text-[18px]" />
       </button>
       {open && (
         <div role="menu" className="absolute right-0 z-[1200] mt-2 w-64 rounded-lg border border-burgundy/10 bg-white py-1 shadow-float">
           <p className="border-b border-line-soft px-4 py-2 text-xs text-muted">{me.email}</p>
-          {workspaces.length > 0 && (
-            <div className="border-b border-line-soft py-1">
-              <p className="px-4 pt-1 pb-1 font-mono text-[10px] tracking-widest text-muted uppercase">Workspaces</p>
-              {workspaces.map((w) => (
-                <button
-                  key={w.id}
-                  role="menuitemradio"
-                  aria-checked={me.workspace?.id === w.id}
-                  className="flex w-full items-center gap-2 px-4 py-1.5 text-left text-sm hover:bg-blush"
-                  onClick={async () => {
-                    setOpen(false);
-                    await switchWorkspace(w.id);
-                  }}
-                >
-                  <Icon name={me.workspace?.id === w.id ? 'radio_button_checked' : 'radio_button_unchecked'} className={`!text-[16px] ${me.workspace?.id === w.id ? 'text-cinnabar' : 'text-muted'}`} />
-                  <span className="min-w-0 flex-1 truncate">{w.name}</span>
-                  {w.memberCount > 1 && <span className="text-[10px] text-muted">{w.memberCount} people</span>}
-                </button>
-              ))}
-            </div>
-          )}
           {[
             ['/preferences', 'tune', 'Family preferences'],
             ['/shortlist', 'favorite', 'Shortlist'],
-            ['/settings/workspace', 'group', 'Workspace & team'],
-            ['/settings/billing', 'credit_card', 'Plan & billing'],
             ['/account', 'manage_accounts', 'Account'],
             ...(me.role === 'DATA_ADMINISTRATOR' ? [['/admin', 'monitoring', 'Data sync status']] : []),
           ].map(([to, icon, label]) => (
@@ -97,8 +73,12 @@ function UserMenu() {
             className="flex w-full items-center gap-2 border-t border-line-soft px-4 py-2 text-left text-sm text-cinnabar hover:bg-blush"
             onClick={async () => {
               setOpen(false);
-              await signOut();
-              nav('/');
+              try {
+                await signOut();
+                nav('/');
+              } catch (error) {
+                toast((error as Error).message, 'error');
+              }
             }}
           >
             <Icon name="logout" className="!text-[18px]" />
@@ -124,7 +104,6 @@ export function Header() {
           <NavItem to="/explore">Explore</NavItem>
           <NavItem to="/shortlist">Shortlist</NavItem>
           <NavItem to="/preferences">Preferences</NavItem>
-          <NavItem to="/pricing">Pricing</NavItem>
           {me?.role === 'DATA_ADMINISTRATOR' && <NavItem to="/admin">Data status</NavItem>}
         </nav>
         <div className="ml-auto flex items-center gap-2 sm:gap-3">

@@ -39,7 +39,7 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
     return;
   }
   // Never echo internal details (may contain secrets); log a sanitised line only.
-  console.error('[error]', err instanceof Error ? `${err.name}: ${err.message.slice(0, 300)}` : 'unknown error');
+  console.error('[error]', sanitiseError(err));
   res.status(500).json({ error: 'Something went wrong on our side. Please try again.' });
 }
 
@@ -47,6 +47,7 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
 export function sanitiseError(err: unknown): string {
   const raw = err instanceof Error ? err.message : String(err);
   return raw
+    .replace(/([a-z][a-z0-9+.-]*:\/\/)[^\s/@]+:[^\s/@]+@/gi, '$1[credentials redacted]@')
     .replace(/(token|password|secret|key|authorization|X-Amz-[A-Za-z-]+)=([^&\s"]+)/gi, '$1=[redacted]')
     .replace(/Bearer\s+[A-Za-z0-9._-]+/g, 'Bearer [redacted]')
     .replace(/https?:\/\/[^\s"]*\?[^\s"]*/g, (u) => u.split('?')[0] + '?[query redacted]')

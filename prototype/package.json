@@ -17,7 +17,7 @@
     "db:deploy": "prisma migrate deploy",
     "db:seed": "npm run seed -w server",
     "sync": "npm run sync -w server",
-    "test": "npm run test -w server",
+    "test": "npm run test -w server && npm run test -w client",
     "typecheck": "tsc -p server --noEmit && tsc -p client --noEmit"
   },
   "prisma": {

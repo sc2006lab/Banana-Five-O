@@ -96,21 +96,3 @@ adminRouter.get('/admin/history', async (req, res) => {
   }));
   res.json(out);
 });
-
-/** SaaS overview for administrators: accounts, workspaces and plans. */
-adminRouter.get('/admin/metrics', async (_req, res) => {
-  const [accounts, workspaces, byPlan, shared, last7] = await Promise.all([
-    prisma.userAccount.count(),
-    prisma.workspace.count(),
-    prisma.userAccount.groupBy({ by: ['plan'], _count: { _all: true } }),
-    prisma.workspace.count({ where: { members: { some: { role: { not: 'OWNER' } } } } }),
-    prisma.userAccount.count({ where: { createdAt: { gte: new Date(Date.now() - 7 * 86_400_000) } } }),
-  ]);
-  res.json({
-    accounts,
-    workspaces,
-    sharedWorkspaces: shared,
-    newAccounts7d: last7,
-    plans: Object.fromEntries(byPlan.map((p) => [p.plan, p._count._all])),
-  });
-});

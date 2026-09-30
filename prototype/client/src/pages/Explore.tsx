@@ -26,6 +26,7 @@ import { AddressSearch } from '../components/AddressSearch';
 import { Dropdown } from '../components/Dropdown';
 import { OneMapTiles, SG_BOUNDS, SG_CENTER, pinIcon } from '../components/map';
 import { FieldError, Icon, Limitation, Notice, ScorePill, Spinner, scoreTone } from '../components/ui';
+import { AmenityHighlight } from '../components/AmenityHighlight';
 import { Rosette } from '../components/Rosette';
 import { toneFor } from '../components/SurveyMap';
 
@@ -60,7 +61,6 @@ function FitToResults({ results, focus }: { results: NeighbourhoodSummary[]; foc
 function ResultCard({ r, radius, destinationLabel, index = 0 }: { r: NeighbourhoodSummary; radius: number; destinationLabel?: string; index?: number }) {
   const { shortlistIds, toggleShortlist, compareIds, toggleCompare } = useApp();
   const h = Object.fromEntries(r.highlights.map((x) => [x.category, x])) as Record<AmenityCategory, NeighbourhoodSummary['highlights'][number]>;
-  const early = h.childcare.count + h.kindergarten.count;
   const saved = shortlistIds.has(r.id);
   const comparing = compareIds.includes(r.id);
   return (
@@ -88,23 +88,13 @@ function ResultCard({ r, radius, destinationLabel, index = 0 }: { r: Neighbourho
       </div>
       <div className="px-5 pt-3 pb-4">
         <div className="flex flex-wrap gap-1.5">
-          <span className="chip">
-            <Icon name="child_care" className="!text-[14px]" />
-            {early} early-childhood ≤ {radiusLabel(radius)}
-          </span>
-          <span className="chip">
-            <Icon name="school" className="!text-[14px]" />
-            {h.primary_school.count} primary · {h.secondary_school.count} secondary
-          </span>
-          <span className="chip">
-            <Icon name="train" className="!text-[14px]" />
-            MRT {fmtDistance(h.mrt.nearestM)}
-          </span>
-          <span className="chip">
-            <Icon name="park" className="!text-[14px]" />
-            {h.park_playground.count} parks
-          </span>
+          {r.highlights.filter((item) => ['childcare', 'kindergarten', 'primary_school', 'secondary_school', 'supermarket', 'mrt'].includes(item.category)).map((item) => (
+            <AmenityHighlight key={item.category} item={item} />
+          ))}
         </div>
+        <p className="mt-2 text-xs text-muted">Within {radiusLabel(radius)} of the neighbourhood reference point.
+          {' '}<Link to={`/n/${r.id}`} className="underline">Sources, freshness and score explanation</Link>
+        </p>
         <div className="mt-3 flex items-end justify-between border-t border-line-soft pt-3">
           <div>
             {r.commuteMin !== null ? (

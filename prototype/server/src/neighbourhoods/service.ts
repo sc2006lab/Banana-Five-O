@@ -47,10 +47,11 @@ export function scoringContext(q: Record<string, unknown>): ScoringContext {
 
 export function summarise(n: IndexedNeighbourhood, ctx: ScoringContext, category?: AmenityCategory): NeighbourhoodSummary {
   const score = calculateScore(index.evidence(n, ctx.thresholds, ctx.destination), ctx.weights, index.datasetVersions());
-  const highlights = AMENITY_CATEGORIES.map((c) => ({
-    category: c,
-    count: index.countWithin(n, [c], ctx.radius),
-    nearestM: n.nearest[c]?.d ?? null,
+  const highlights = amenitySummaries(n, ctx.radius).map((a) => ({
+    category: a.category,
+    count: a.matchedCount,
+    nearestM: a.nearest?.distanceM ?? null,
+    state: a.state,
   }));
   return {
     id: n.id,

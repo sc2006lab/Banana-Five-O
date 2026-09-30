@@ -184,6 +184,13 @@ describe('preferences (UC-2.1)', () => {
 });
 
 describe('discovery and profiles (UC-3.1, UC-4.1)', () => {
+  it('carries category availability into search results instead of presenting unknown counts as verified', async () => {
+    const r = await request(app).get('/api/neighbourhoods');
+    expect(r.status).toBe(200);
+    const highlights = r.body.results[0].highlights;
+    expect(highlights.find((h: { category: string }) => h.category === 'mrt').state).toBe('UNAVAILABLE');
+    expect(highlights.find((h: { category: string }) => h.category === 'childcare').state).toBe('INCOMPLETE');
+  });
   it('searches by planning area with spelling tolerance and paginates stably', async () => {
     const r = await request(app).get('/api/neighbourhoods?q=testvile&pageSize=4');
     expect(r.status).toBe(200);
@@ -249,6 +256,17 @@ describe('discovery and profiles (UC-3.1, UC-4.1)', () => {
 });
 
 describe('shortlist and notes (UC-6.3)', () => {
+  it('exposes personal account details without commercial fields or endpoints', async () => {
+    const agent = await register();
+    const me = await agent.get('/api/auth/me');
+    expect(Object.keys(me.body).sort()).toEqual(['displayName', 'email', 'id', 'role']);
+    for (const route of ['/workspaces', '/billing', '/invites']) {
+      expect((await agent.get(`/api${route}`)).status).toBe(404);
+    }
+    expect((await agent.post('/api/billing/checkout').send({})).status).toBe(404);
+    expect((await agent.post('/api/billing/webhook').send({})).status).toBe(404);
+    expect((await agent.get('/api/shortlist')).body.max).toBe(10);
+  });
   it('requires sign-in', async () => {
     expect((await request(app).get('/api/shortlist')).status).toBe(401);
     expect((await request(app).post('/api/shortlist').send({ neighbourhoodId: 'TVSZ01' })).status).toBe(401);
@@ -267,13 +285,10 @@ describe('shortlist and notes (UC-6.3)', () => {
   it('enforces capacity in the database even for concurrent inserts', async () => {
     const agent = await register();
     const acc = await prisma.userAccount.findFirstOrThrow();
-    const ws = await prisma.workspace.findFirstOrThrow({ where: { ownerId: acc.id } });
     await Promise.allSettled(
-      Array.from({ length: 12 }, (_, i) =>
-        prisma.shortlistEntry.create({ data: { workspaceId: ws.id, accountId: acc.id, neighbourhoodId: `TVSZ${String(i + 1).padStart(2, '0')}` } }),
-      ),
+      Array.from({ length: 12 }, (_, i) => prisma.shortlistEntry.create({ data: { accountId: acc.id, neighbourhoodId: `TVSZ${String(i + 1).padStart(2, '0')}` } })),
     );
-    expect(await prisma.shortlistEntry.count({ where: { workspaceId: ws.id } })).toBe(10);
+    expect(await prisma.shortlistEntry.count({ where: { accountId: acc.id } })).toBe(10);
     expect((await agent.get('/api/shortlist')).body.entries).toHaveLength(10);
   });
 

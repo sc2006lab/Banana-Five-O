@@ -4,6 +4,7 @@ import { Layout } from './components/Layout';
 import { Spinner } from './components/ui';
 import { AppStateProvider, useApp } from './state/AppState';
 import { LandingPage } from './pages/Landing';
+import { AppErrorBoundary } from './components/AppErrorBoundary';
 
 const ExplorePage = lazy(() => import('./pages/Explore').then((m) => ({ default: m.ExplorePage })));
 const ProfilePage = lazy(() => import('./pages/Profile').then((m) => ({ default: m.ProfilePage })));
@@ -14,10 +15,6 @@ const PreferencesPage = lazy(() => import('./pages/Preferences').then((m) => ({ 
 const SignInPage = lazy(() => import('./pages/SignIn').then((m) => ({ default: m.SignInPage })));
 const AccountPage = lazy(() => import('./pages/Account').then((m) => ({ default: m.AccountPage })));
 const AdminPage = lazy(() => import('./pages/Admin').then((m) => ({ default: m.AdminPage })));
-const WorkspaceSettingsPage = lazy(() => import('./pages/WorkspaceSettings').then((m) => ({ default: m.WorkspaceSettingsPage })));
-const BillingPage = lazy(() => import('./pages/Billing').then((m) => ({ default: m.BillingPage })));
-const InvitePage = lazy(() => import('./pages/Invite').then((m) => ({ default: m.InvitePage })));
-const PricingPage = lazy(() => import('./pages/Pricing').then((m) => ({ default: m.PricingPage })));
 const ForgotPasswordPage = lazy(() => import('./pages/PasswordReset').then((m) => ({ default: m.ForgotPasswordPage })));
 const ResetPasswordPage = lazy(() => import('./pages/PasswordReset').then((m) => ({ default: m.ResetPasswordPage })));
 
@@ -42,6 +39,7 @@ function RequireAuth({ children, admin = false }: { children: ReactNode; admin?:
 
 export function App() {
   return (
+    <AppErrorBoundary>
     <AppStateProvider>
       <BrowserRouter>
         <Suspense fallback={<Spinner />}>
@@ -49,7 +47,6 @@ export function App() {
           <Route element={<Layout />}>
             <Route index element={<LandingPage />} />
             <Route path="explore" element={<ExplorePage />} />
-            <Route path="pricing" element={<PricingPage />} />
             <Route path="n/:id" element={<ProfilePage />} />
             <Route path="n/:id/commute" element={<CommutePage />} />
             <Route path="compare" element={<ComparePage />} />
@@ -59,23 +56,6 @@ export function App() {
             <Route path="register" element={<SignInPage initialTab="register" />} />
             <Route path="forgot-password" element={<ForgotPasswordPage />} />
             <Route path="reset-password" element={<ResetPasswordPage />} />
-            <Route path="invite" element={<InvitePage />} />
-            <Route
-              path="settings/workspace"
-              element={
-                <RequireAuth>
-                  <WorkspaceSettingsPage />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="settings/billing"
-              element={
-                <RequireAuth>
-                  <BillingPage />
-                </RequireAuth>
-              }
-            />
             <Route
               path="account"
               element={
@@ -108,5 +88,6 @@ export function App() {
         </Suspense>
       </BrowserRouter>
     </AppStateProvider>
+    </AppErrorBoundary>
   );
 }

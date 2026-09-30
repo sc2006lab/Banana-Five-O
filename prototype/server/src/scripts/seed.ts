@@ -1,7 +1,6 @@
 // Seed the data administrator and a demo registered user (credentials come from .env, never hard-coded).
 import { prisma } from '../db.js';
 import { ARGON2_PARAMS_LABEL, hashPassword } from '../account/passwords.js';
-import { createWorkspace } from '../workspaces/service.js';
 
 async function upsertAccount(email: string | undefined, password: string | undefined, displayName: string, role: 'REGISTERED_USER' | 'DATA_ADMINISTRATOR') {
   if (!email || !password) {
@@ -21,12 +20,6 @@ async function upsertAccount(email: string | undefined, password: string | undef
     },
     update: { role, credential: { upsert: { create: { saltedHash, parameters: ARGON2_PARAMS_LABEL }, update: { saltedHash } } } },
   });
-  if (!(await prisma.workspace.findFirst({ where: { ownerId: a.id, personal: true } }))) {
-    await prisma.$transaction(async (tx) => {
-      const ws = await createWorkspace(tx, a.id, `${displayName}'s household`, true, 'household');
-      await tx.userAccount.update({ where: { id: a.id }, data: { activeWorkspaceId: ws.id } });
-    });
-  }
   console.log(`[seed] ${role}: ${a.email}`);
   return a;
 }

@@ -406,3 +406,9 @@ body {
     linear-gradient(to right, rgba(254, 208, 187, 0.07) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(254, 208, 187, 0.07) 1px, transparent 1px);
 }
+
+.sm-zone:focus-visible {
+  outline: 2px solid #461220;
+  stroke: #461220;
+  stroke-width: 2;
+}

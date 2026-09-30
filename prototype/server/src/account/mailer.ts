@@ -1,5 +1,5 @@
-// Email Delivery Service boundary (UC-1.3). Without SMTP configured, the reset link is printed to the
-// server console for local development — it is never returned in an API response.
+// Email Delivery Service boundary (UC-1.3). Reset links are never logged.
+import nodemailer from 'nodemailer';
 import { config } from '../config.js';
 
 export interface OutgoingMail {
@@ -17,10 +17,14 @@ export async function sendMail(mail: OutgoingMail): Promise<void> {
     return;
   }
   if (!config.mail.smtpUrl) {
-    console.log(`\n[mail:dev] To: ${mail.to}\n[mail:dev] Subject: ${mail.subject}\n${mail.text}\n`);
-    return;
+    throw new Error('Password-reset email is not configured.');
   }
-  // SMTP delivery can be added with nodemailer when a provider is chosen; keep the boundary here.
-  console.warn('[mail] SMTP_URL is set but no SMTP transport is bundled in this prototype; printing instead.');
-  console.log(`[mail:dev] To: ${mail.to}\n${mail.text}`);
+  const transport = nodemailer.createTransport(config.mail.smtpUrl, {
+    from: config.mail.from,
+  });
+  try {
+    await transport.sendMail(mail);
+  } finally {
+    transport.close();
+  }
 }

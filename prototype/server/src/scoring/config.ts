@@ -75,7 +75,7 @@ export const SCORING_CONFIG: ScoringConfiguration = {
       defaultRadiusM: 400,
       target: 12,
       description:
-        'Bus stops within 400 m of the reference point (proxy for step-free public-transport access); 12 or more scores 1.0.',
+        'Bus stops within 400 m of the reference point (transport-access proxy, not verified step-free access); 12 or more scores 1.0.',
     },
   },
   missingDataTreatment:

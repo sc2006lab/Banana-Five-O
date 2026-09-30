@@ -1,35 +1,27 @@
 // UC-6.3 Manage Shortlist and Notes (FR-DEC-05 – FR-DEC-07).
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { COMPARE_MAX, COMPARE_MIN, LIMITATION_SCORE, NOTE_MAX, SHORTLIST_MAX, type ShortlistEntryDto } from '@famplan/shared';
 import { api, ApiError, fmtDate, fmtDistance, scoringParams } from '../lib/api';
 import { useApp } from '../state/AppState';
 import { FieldError, Icon, Limitation, Notice, ScorePill, Spinner } from '../components/ui';
+import { AmenityHighlight } from '../components/AmenityHighlight';
 
-type Entry = ShortlistEntryDto & { addedBy?: string };
-interface WorkspaceInfo {
-  id: string;
-  name: string;
-  role: string;
-  plan: string;
-  memberCount: number;
-  canExport: boolean;
-}
-
-function Entry({ e, selected, onSelect, onRemoved, shared }: { e: Entry; selected: boolean; onSelect: () => void; onRemoved: () => void; shared: boolean }) {
+function Entry({ e, selected, onSelect, onRemoved }: { e: ShortlistEntryDto; selected: boolean; onSelect: () => void; onRemoved: () => void }) {
   const { toast, refreshShortlist } = useApp();
   const [note, setNote] = useState(e.note);
+  const [savedNote, setSavedNote] = useState(e.note);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string>();
   const n = e.neighbourhood;
-  const dirty = note !== e.note;
+  const dirty = note !== savedNote;
 
   const save = async (text: string) => {
     setSaving(true);
     try {
       const r = await api<{ message: string }>(`/shortlist/${e.neighbourhoodId}/note`, { method: 'PUT', body: { text } });
       setErr(undefined);
-      e.note = text;
+      setSavedNote(text);
       toast(r.message, 'success');
     } catch (x) {
       setErr((x as ApiError).fields.text ?? (x as ApiError).message);
@@ -48,12 +40,7 @@ function Entry({ e, selected, onSelect, onRemoved, shared }: { e: Entry; selecte
             <h2 id={`s-${e.neighbourhoodId}`} className="text-xl font-semibold text-burgundy">
               {n ? <Link to={`/n/${e.neighbourhoodId}`} className="hover:underline">{n.name}</Link> : e.neighbourhoodId}
             </h2>
-            {n && (
-              <span className="block text-sm text-muted">
-                {n.planningArea} · saved {fmtDate(e.addedAt)}
-                {shared && e.addedBy ? ` by ${e.addedBy}` : ''}
-              </span>
-            )}
+            {n && <span className="block text-sm text-muted">{n.planningArea} · saved {fmtDate(e.addedAt)}</span>}
           </span>
         </label>
         <div className="flex items-center gap-2">
@@ -81,9 +68,7 @@ function Entry({ e, selected, onSelect, onRemoved, shared }: { e: Entry; selecte
           {n.highlights
             .filter((h) => ['childcare', 'primary_school', 'mrt', 'supermarket'].includes(h.category))
             .map((h) => (
-              <span key={h.category} className="chip">
-                {h.category.replace('_', ' ')}: {h.count} · nearest {fmtDistance(h.nearestM)}
-              </span>
+              <AmenityHighlight key={h.category} item={h} />
             ))}
           {n.commuteMin !== null && <span className="chip">Commute ~{n.commuteMin} min</span>}
         </div>
@@ -92,8 +77,7 @@ function Entry({ e, selected, onSelect, onRemoved, shared }: { e: Entry; selecte
       )}
       <div className="mt-4">
         <label className="label" htmlFor={`note-${e.neighbourhoodId}`}>
-          {shared ? 'Shared note' : 'Private note'}{' '}
-          <span className="font-normal text-muted">{shared ? '(visible to everyone in this workspace)' : '(only you can see this)'}</span>
+          Private note <span className="font-normal text-muted">(only you can see this)</span>
         </label>
         <textarea
           id={`note-${e.neighbourhoodId}`}
@@ -110,7 +94,7 @@ function Entry({ e, selected, onSelect, onRemoved, shared }: { e: Entry; selecte
             {note.length}/{NOTE_MAX} characters
           </span>
           <div className="flex gap-2">
-            {e.note && (
+            {savedNote && (
               <button className="btn-ghost btn-sm" disabled={saving} onClick={() => { setNote(''); void save(''); }}>
                 Clear note
               </button>
@@ -129,25 +113,31 @@ function Entry({ e, selected, onSelect, onRemoved, shared }: { e: Entry; selecte
 export function ShortlistPage() {
   const { me, loadingMe, scoring, setCompareIds } = useApp();
   const nav = useNavigate();
-  const [entries, setEntries] = useState<Entry[] | null>(null);
-  const [workspace, setWorkspace] = useState<WorkspaceInfo | null>(null);
-  const [max, setMax] = useState(SHORTLIST_MAX);
+  const [entries, setEntries] = useState<ShortlistEntryDto[] | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const requestController = useRef<AbortController | null>(null);
 
   const load = useCallback(() => {
-    api<{ entries: Entry[]; workspace: WorkspaceInfo; max: number }>(`/shortlist?${scoringParams(scoring)}`)
+    requestController.current?.abort();
+    const controller = new AbortController();
+    requestController.current = controller;
+    setError(null);
+    api<{ entries: ShortlistEntryDto[] }>(`/shortlist?${scoringParams(scoring)}`, { signal: controller.signal })
       .then((r) => {
+        if (controller.signal.aborted) return;
         setEntries(r.entries);
-        setWorkspace(r.workspace);
-        setMax(r.max);
+        setSelected((ids) => ids.filter((id) => r.entries.some((entry) => entry.neighbourhoodId === id)));
       })
-      .catch((e) => setError((e as Error).message));
+      .catch((e) => { if (!controller.signal.aborted) setError((e as Error).message); });
   }, [scoring]);
 
   useEffect(() => {
+    setEntries(null);
+    setSelected([]);
     if (me) load();
-  }, [me, me?.workspace?.id, load]);
+    return () => requestController.current?.abort();
+  }, [me?.id, load]);
 
   if (loadingMe) return <Spinner />;
   if (!me)
@@ -169,29 +159,11 @@ export function ShortlistPage() {
     <div className="mx-auto max-w-4xl px-4 py-8 md:px-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          {workspace && (
-            <p className="eyebrow flex items-center gap-1.5">
-              <Icon name={workspace.memberCount > 1 ? 'group' : 'person'} className="!text-[14px]" />
-              {workspace.name}
-              {workspace.memberCount > 1 ? ` · shared with ${workspace.memberCount - 1} ${workspace.memberCount === 2 ? 'person' : 'people'}` : ''}
-            </p>
-          )}
-          <h1 className="mt-1 font-display text-5xl text-burgundy">Shortlist</h1>
+          <h1 className="text-4xl font-bold tracking-tight text-burgundy">Shortlist</h1>
           <p className="mt-1 text-muted" aria-live="polite">
-            {entries ? `${entries.length} of ${max} saved` : ''} · select {COMPARE_MIN}–{COMPARE_MAX} to compare
+            {entries ? `${entries.length} of ${SHORTLIST_MAX} saved` : ''} · select {COMPARE_MIN}–{COMPARE_MAX} to compare
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-        {workspace &&
-          (workspace.canExport ? (
-            <a className="btn-secondary" href={`/api/workspaces/${workspace.id}/export.csv`} download>
-              <Icon name="download" className="!text-[18px]" /> Export CSV
-            </a>
-          ) : (
-            <Link to="/settings/workspace" className="btn-secondary">
-              <Icon name="person_add" className="!text-[18px]" /> Plan together
-            </Link>
-          ))}
         <button
           className="btn-dark"
           disabled={selected.length < COMPARE_MIN}
@@ -203,7 +175,6 @@ export function ShortlistPage() {
           <Icon name="compare_arrows" className="!text-[18px]" />
           Compare selected ({selected.length})
         </button>
-        </div>
       </div>
       {error && <Notice tone="error" className="mt-4">{error}</Notice>}
       {!entries && !error && <Spinner />}
@@ -214,16 +185,9 @@ export function ShortlistPage() {
           <Link to="/explore" className="btn-primary mt-4">Explore neighbourhoods</Link>
         </div>
       )}
-      <div className="stagger mt-6 space-y-4">
+      <div className="mt-6 space-y-4">
         {entries?.map((e) => (
-          <Entry
-            key={e.neighbourhoodId}
-            e={e}
-            shared={(workspace?.memberCount ?? 1) > 1}
-            selected={selected.includes(e.neighbourhoodId)}
-            onSelect={() => toggle(e.neighbourhoodId)}
-            onRemoved={load}
-          />
+          <Entry key={e.neighbourhoodId} e={e} selected={selected.includes(e.neighbourhoodId)} onSelect={() => toggle(e.neighbourhoodId)} onRemoved={load} />
         ))}
       </div>
       <div className="mt-6">

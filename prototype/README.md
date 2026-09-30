@@ -1,116 +1,111 @@
-# FamPlan
+# FamPlan — family neighbourhood planning
 
-FamPlan helps Singapore households compare **family neighbourhoods**. It covers nearby childcare, schools, groceries, clinics, parks, public transport, commute and accessibility. Each neighbourhood gets a transparent, user-weighted suitability score.
+FamPlan helps couples and households choose neighbourhoods that suit their family plans: childcare, schools, supermarkets, healthcare, parks, transport and journeys to work or relatives. It is a comparative planning aid, not a flat-price tool, admissions predictor or vacancy service.
 
-The prototype follows **SRS v1.3**, the **Lab 2 class diagram** and the **technology stack recommendation**:
+## Baseline and stack
 
-- React + Vite
-- Express
-- PostgreSQL + Prisma
-- Leaflet + OneMap
-- node-cron
-- Vitest + Supertest
+The local **FamPlan SRS V1.1** is the requirements baseline (48 FRs, 29 NFRs, 16 use cases). Repository documents with different version numbers do not supersede it for this change.
 
-The UI follows the Lab 1 *Warm Institutional* mockups: the burgundy/cinnabar/peach palette, Public Sans and Material Symbols. The marketing site and animations follow the **Tender Survey** visual direction in [`../design/`](../design/tender-survey-philosophy.md).
+Keep the Lab 3 stack simple: React + Vite + TypeScript, Express, PostgreSQL + Prisma, Leaflet + OneMap, and node-cron inside Express. Context handles shared UI state. Zod validates input on both sides; Argon2id and HTTP-only server sessions handle authentication. Nodemailer provides the password-reset email boundary. Vitest, React Testing Library and Supertest are development tools, not additional services.
 
-## SaaS platform
+There are **no subscriptions, payments, plan upgrades, invitations, shared workspaces or paid limits**. Every registered account has its own preferences, shortlist and private notes.
 
-| Area | What it does |
-|---|---|
-| **Landing page** (`/`) | Animated map built from live data: 332 URA subzones drawn west to east, scored neighbourhoods settling in, 1,949 childcare dots appearing, and pulsing 500 m / 1 km / 2 km rings. Also: a cycling eight-criterion rosette, scroll reveals, count-up stats, a sources marquee, pricing, and the Plate Nº 01 poster. Explore moves to `/explore`. |
-| **Motion system** | `client/src/lib/motion.tsx` (reveal on scroll, count-up, tweened numbers) plus CSS keyframes: page transitions, staggered cards, skeleton loaders, bars that grow, and animated rosettes on results, profiles and comparisons. Everything respects `prefers-reduced-motion`. |
-| **Plans** (`shared/src/plans.ts`) | **Household** (free): 1 person, shortlist of 10, as in the SRS. **Family** (S$6/mo): 4 people, shortlist of 25, CSV export. **Advisor** (S$39/mo): 25 client workspaces, 6 people each. |
-| **Workspaces** | Every account gets a personal workspace. Shortlists and notes belong to the active workspace. Roles are Owner, Admin and Member. Switch workspaces from the user menu. Limits are enforced by both the API and a Postgres trigger. |
-| **Invites** | Single-use, 7-day email links (`/invite?token=`). They can only be accepted by the invited email address, and pending invites count toward the seat limit. |
-| **Billing** (`/settings/billing`) | Stripe Checkout, the billing portal, and signed webhooks, all via Stripe's REST API with no SDK. **Demo mode:** when `STRIPE_SECRET_KEY` is empty, plan changes apply instantly with a clear "no payment taken" label. Downgrades are blocked with an explanation while usage exceeds the smaller plan. |
-| **Admin** | SaaS metrics (accounts, new this week, workspaces, shared workspaces, paid accounts) above the data-sync dashboard. |
-| **Deploy** | `Dockerfile` (multi-stage, non-root, healthcheck, runs migrations on boot) and `docker-compose.yml` (Postgres 16 + app). Set `HTTPS=true` behind TLS to turn on secure cookies, HSTS and HTTP→HTTPS redirects. Routes are code-split: the main bundle is ~77 KB gzipped and the map loads on demand. |
+## User workflow
 
-To go live with real payments: create two recurring Prices in Stripe, then set `STRIPE_SECRET_KEY`, `STRIPE_PRICE_FAMILY`, `STRIPE_PRICE_ADVISOR` and `BILLING_DEMO=false`. Point a webhook at `https://<host>/api/billing/webhook` (events `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`) and set `STRIPE_WEBHOOK_SECRET`.
+1. Explore publicly, or create an account to save family stages, areas and priorities.
+2. Set family preferences and optional destinations. Visitors can try weights for the current visit.
+3. Search/filter neighbourhood profiles; inspect amenities, distances, missing data and source dates.
+4. Select 2–4 neighbourhoods and compare their scores, amenities and commute estimates.
+5. Save up to 10 neighbourhoods with private notes of up to 500 characters.
+6. Administrators monitor automatic source updates and history. They do not manually start sync.
 
-> Scope note: the Lab 1 mockups were drawn for HDB resale flats. The SRS v1.3 baseline is neighbourhood-focused and says FamPlan is *not* a property marketplace. The prototype keeps each mockup's layout and applies it to neighbourhoods. The HFE and financial-roadmap screens are left out, in line with the Lab 2 TODO ("Remove HFE").
+The burgundy/peach UI, maps, score explanations and reduced-motion support are retained. Pricing pages, payment buttons and commercial admin metrics have been removed.
 
-## Quick start
+## Local setup
 
-Prerequisites: Node 22+ and PostgreSQL 16. On macOS: `brew install postgresql@16 && brew services start postgresql@16`.
+Use Node **24 LTS** (or supported Node 22.12+) and PostgreSQL 16+. Start with an empty development database. Do not point the test suite at a database you need to preserve.
 
 ```bash
 cd prototype
-cp .env.example .env              # set DATABASE_URL user (e.g. postgresql://<you>@localhost:5432/famplan) and seed passwords
-createdb famplan && createdb famplan_test
-npm install
-npm run db:deploy                 # apply migrations (tables, CHECK constraints, shortlist-capacity trigger)
-npm run db:seed                   # data administrator + demo user (credentials from .env)
-npm run sync                      # first data load from data.gov.sg / OSM / OneMap (~6 min; schools are geocoded once and cached)
-npm run dev                       # API on :3001, web on http://localhost:5173
+cp .env.example .env
+# Edit DATABASE_URL, APP_ORIGIN and unique seed passwords in .env.
+createdb famplan
+createdb famplan_test
+npm ci
+npx prisma generate
+npm run db:deploy
+npm run db:seed
+npm run dev
 ```
 
-Other commands:
+Open http://localhost:5173. Express runs on port 3001. At startup it checks for sources that have never succeeded or are overdue, and begins loading them automatically. Until validated data is available, affected views show unavailable states. The daily schedule defaults to 04:00 Singapore time. Keep the server running for scheduled checks.
+
+Optional integrations:
+
+- `ONEMAP_EMAIL` / `ONEMAP_PASSWORD`: live routes. Without them, the app states live routing is unavailable and labels modelled travel estimates.
+- `SMTP_URL` / `MAIL_FROM`: real password-reset delivery. Without SMTP, the reset endpoint returns an availability message. Reset links are never printed to logs.
+- `HTTPS=true`, a TLS-terminating reverse proxy, and the real `APP_ORIGIN`: production deployment. Configure TLS 1.2+ at the proxy. Never submit real credentials over an HTTP deployment.
+
+`docker compose up --build` is an optional local alternative, not an extra production service requirement. Its sample database password and HTTP configuration are for local development only.
+
+## Upgrading an existing database
+
+Back up the database and stop application writes before applying the new migration. The old migration history is deliberately retained; `20260930090000_personal_family_planning` removes the commercial models.
+
+- Personal shortlist entries and notes are preserved.
+- Shared shortlist entries, duplicate account/neighbourhood pairs, more than 10 entries per account, or unresolved external subscriptions stop the migration with `PERSONAL_MIGRATION_REVIEW_REQUIRED`.
+- Export and reconcile flagged records with their owners first; do not simply delete them to bypass the guard. Resolve any external subscriptions before discarding billing references.
+- Workspace membership/invite metadata and plan fields are removed after the checks pass. Keep the backup if these records need archival.
+- A stopped migration is transactional. After resolving the data, follow Prisma's failed-migration recovery procedure before retrying deployment.
+
+No existing development or production database was upgraded during this implementation; verification used an isolated fixture database.
+
+## Commands
 
 | Command | Purpose |
 |---|---|
-| `npm test` | Vitest unit tests and Supertest API tests against `famplan_test` |
-| `npm run test:coverage -w server` | Coverage for the scoring, geo, dedup, validation and transformation modules |
-| `npm run typecheck` | TypeScript check for server and client |
-| `npm run build && npm start` | Production build: Express serves the React app and the API on one port |
-| `docker compose up --build` | Production-like stack (Postgres + app) on http://localhost:3001 |
+| `npm run typecheck` | Strict server/client TypeScript checks |
+| `npm run build` | Production React build |
+| `npm test` | Backend and frontend tests |
+| `npm run test -w client` | Browser-component tests without a database |
+| `npm run test:coverage -w server` | Coverage of the configured backend modules |
+| `npm run db:deploy` | Apply reviewed migrations to DATABASE_URL |
+| `npm run db:seed` | Create configured administrator/demo accounts |
+| `npm run sync` | Developer setup/diagnostic command, not an administrator UI feature |
 
-The server also syncs automatically: daily at 04:00 SGT (`SYNC_CRON`), and at startup when any source has never run or is more than 24 h old.
+Backend integration tests use `TEST_DATABASE_URL`, defaulting to the local `famplan_test` database. Apply migrations to that database separately before testing:
 
-## What's implemented
+```bash
+DATABASE_URL="postgresql://localhost:5432/famplan_test" npm run db:deploy
+TEST_DATABASE_URL="postgresql://localhost:5432/famplan_test" npm test
+```
 
-| Area | Requirements | Where |
-|---|---|---|
-| Register, login/logout, password reset, display name, delete account | FR-ACC-01…06, NFR-SEC-02/04 | `server/src/account`, `client/src/pages/SignIn.tsx`, `Account.tsx`, `PasswordReset.tsx` |
-| Family stages, areas, up to 3 destinations, amenity distances, 0–5 weights, stage presets | FR-PREF-01…07 | `server/src/preferences`, `client/src/pages/Preferences.tsx` |
-| Search by town / planning area / subzone / address / postal code; filters, sort, pagination, apply saved preferences | FR-DISC-01…06 | `server/src/neighbourhoods/service.ts`, `client/src/pages/Explore.tsx` |
-| Profile, amenity counts, nearest facility, 500 m / 1 km / 2 km radius, facility details, provenance, category states | FR-NBH-01…10 | `Profile.tsx` |
-| Interactive map with category markers, a list alternative, and commute routes | FR-TRV-01…05 | `Profile.tsx`, `Commute.tsx`, `server/src/travel` |
-| Explainable score, missing-data treatment, compare 2–4, shortlist (max 10), notes (max 500 chars) | FR-DEC-01…07, NFR-TRANS-01/02 | `server/src/scoring`, `Compare.tsx`, `Shortlist.tsx` |
-| Automatic sync, validation, snapshot activation, monitoring (no manual trigger) | FR-ADM-01…04, FR-RES-01…03 | `server/src/synchronisation`, `client/src/pages/Admin.tsx` |
+Test fixtures refuse to clear a database whose name does not end in `_test`. Use only disposable test data.
 
-## Data sources (real, authorised open data)
+## Requirement implementation map
 
-| Source id | Dataset | Categories |
-|---|---|---|
-| `ura-subzones` | URA Master Plan 2019 Subzone Boundary | neighbourhood boundaries (332 subzones → ~170 family neighbourhoods) |
-| `ecda-preschools`, `ecda-childcare` | ECDA Pre-Schools Location; Child Care Services | childcare, kindergarten (deduplicated across both) |
-| `moe-schools` | MOE General information of schools, geocoded via OneMap | primary, secondary |
-| `osm-supermarkets` | OpenStreetMap `shop=supermarket` (ODbL) | supermarket |
-| `moh-chas-clinics` | MOH CHAS Clinics | clinic |
-| `nparks-parks` | NParks Parks | parks & playgrounds |
-| `lta-mrt-exits`, `lta-bus-stops` | LTA MRT Station Exit; LTA Bus Stop | MRT/LRT, bus stop |
+| Requirements | Implementation |
+|---|---|
+| FR-ACC-01–06 | Registration, login/logout, email reset, display-name editing, confirmed account deletion |
+| FR-PREF-01–07 | Family stages, areas, up to 3 destinations, amenity radii, eight 0–5 weights, saved profiles and editable presets |
+| FR-DISC-01–06 | Search, filters, apply saved preferences, profile labels, sorting and validation |
+| FR-NBH-01–10 | Neighbourhood boundaries/reference points, nine amenity categories, 500/1000/2000 m radii, distances, source metadata and availability warnings |
+| FR-TRV-01–05 | Maps, provider-backed routes where configured, supported modes, barrier-free limitation and route provenance |
+| FR-DEC-01–07 | Explainable scores, missing-data rules, 2–4 comparison, private 10-entry shortlists and 500-character notes |
+| FR-ADM-01–04; FR-RES-01–03 | Role-protected monitoring, automatic sync, history, last-valid snapshot retention, failure isolation and freshness warnings |
 
-Data.gov.sg datasets are used under the Singapore Open Data Licence. The basemap, search and routing come from OneMap (SLA).
+This maps implemented code, not a claim that every acceptance scenario or NFR has been certified.
 
-**Family neighbourhood rule:** a URA subzone counts as a family neighbourhood when it:
+## Data and scoring limitations
 
-- lies in a residential planning area, and
-- contains at least 3 early-childhood centres inside its boundary.
+Sources remain isolated adapters in `server/src/synchronisation/sources.ts`: URA subzones, ECDA childcare/preschools, MOE schools, MOH CHAS clinics, NParks parks, LTA rail/bus data through data.gov.sg, OpenStreetMap supermarkets and OneMap.
 
-Its reference point is the area centroid, or the nearest interior point if the centroid falls outside the boundary. All distances are great-circle metres from that point.
+The existing discovery rule selects residential subzones containing at least three early-childhood centres. This is a product heuristic, not an SRS definition or proof that excluded areas are unsuitable. Review it with the team before final acceptance.
 
-## Scoring (`famplan-score-v1.0`, `server/src/scoring/config.ts`)
+Distances are straight-line distances from a neighbourhood reference point, not walking distances from a particular home. Kindergarten classification currently uses facility names; missing source detail must not be interpreted as confirmed service availability. The accessibility score is a bus-stop proximity proxy, not verified step-free access.
 
-Each criterion is normalised to 0–1 by a documented linear rule. The rules were calibrated against real Singapore percentiles.
+Scores use disclosed normalisation and weights, with exact .5 rounded upward. Missing criteria are excluded; if all available criteria have weight zero, the documented equal-weight fallback applies. Live-route estimates and locally modelled commute times are distinguished.
 
-**Total** = Σ(weight × normalised) ÷ Σ(weight) × 100, then rounded to the nearest whole number. An exact .5 rounds up.
+## Verification and remaining evidence
 
-- **Missing criteria** are excluded, and their weight is redistributed.
-- **All-zero weights** fall back to equal weighting.
-
-The Profile and Compare pages show every criterion's raw value, normalised value, weight share and points contributed, plus the configuration and dataset versions.
-
-## Known limitations / next steps
-
-- **Live routing** needs a free OneMap account: set `ONEMAP_EMAIL` / `ONEMAP_PASSWORD`. Without it, the Commute page shows a clearly labelled straight-line estimate. Search ranking always uses that estimate, so results stay deterministic and don't depend on live APIs.
-- **Barrier-free routing:** OneMap does not supply step-free route data, so the app shows the "coverage unavailable" statement from FR-TRV-04. The accessibility criterion uses bus stops within 400 m as a proxy.
-- **Email:** without SMTP, password-reset links are printed to the server console instead of being emailed.
-- **Kindergartens** are identified by name ("Kindergarten"), because ECDA's location data has no service-type field.
-- **Branch coverage:** scoring and validation are above the 80% NFR-MAINT-02 target. `geo.ts` and the data.gov.sg network client are lower (≈60% / ≈50%).
-- **Not yet done:**
-  - a load test for NFR-PERF (search runs against an in-memory index built from Postgres, ~150 ms rebuild)
-  - Playwright end-to-end tests (needs a browser download)
-  - a Prisma 7 migration (`package.json#prisma` is deprecated there)
-
-Try the failure-isolation demo (FR-RES-01): run `SYNC_FAIL_SOURCES=moe-schools npm run sync -- moe-schools`. The admin dashboard then shows the failure, while the previous validated schools dataset stays active.
+See [implementation verification](specs/family-planning-v1-1_verification.md). Performance at 100,000 records/100 concurrent users, the one-hour reliability target, moderated usability trials, full WCAG AA review and the required multi-browser matrix need separate acceptance evidence. Do not describe the prototype as meeting all 29 NFRs merely because the build and unit tests pass.

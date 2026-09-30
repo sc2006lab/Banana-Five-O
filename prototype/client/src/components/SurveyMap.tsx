@@ -44,7 +44,7 @@ export function SurveyMap({ data, interactive = true, className = '' }: { data: 
         ref={ref}
         viewBox={`0 0 ${data.width} ${data.height}`}
         className={`survey-map h-auto w-full ${on ? 'is-on' : ''}`}
-        role="img"
+        role={interactive ? 'group' : 'img'}
         aria-label={`Map of Singapore's ${data.stats.subzones} URA subzones. ${data.stats.neighbourhoods} family neighbourhoods are shaded by suitability score; dots mark ${data.stats.earlyCare} early-childhood centres.`}
         onMouseLeave={() => setHover(null)}
       >
@@ -67,6 +67,14 @@ export function SurveyMap({ data, interactive = true, className = '' }: { data: 
                 style={{ animationDelay: `${delayOf(z.cx, 500, 1400)}ms` }}
                 onMouseEnter={interactive ? () => setHover(z) : undefined}
                 onClick={interactive ? () => nav(`/n/${z.id}`) : undefined}
+                role={interactive ? 'link' : undefined}
+                tabIndex={interactive ? 0 : undefined}
+                aria-label={interactive ? `${z.name}, ${z.planningArea}: view neighbourhood profile` : undefined}
+                onFocus={interactive ? () => setHover(z) : undefined}
+                onBlur={interactive ? () => setHover(null) : undefined}
+                onKeyDown={interactive ? (event) => {
+                  if (event.key === 'Enter') nav(`/n/${z.id}`);
+                } : undefined}
               />
             ))}
         </g>

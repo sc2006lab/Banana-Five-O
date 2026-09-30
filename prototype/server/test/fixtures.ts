@@ -4,6 +4,9 @@ import { rebuildIndex } from '../src/neighbourhoods/store.js';
 import { ensureRegistry } from '../src/synchronisation/pipeline.js';
 
 export async function resetDb() {
+  const target = new URL(process.env.DATABASE_URL ?? '');
+  if (process.env.NODE_ENV !== 'test' || !target.pathname.endsWith('_test'))
+    throw new Error('Refusing to clear a database without a _test name in test mode.');
   await prisma.$executeRawUnsafe(
     'TRUNCATE "ShortlistEntry","PriorityDestination","FamilyPreferenceProfile","Session","PasswordResetToken","PasswordCredential","UserAccount","Facility","Neighbourhood","DatasetSnapshot","SyncHistoryRecord","DataSourceRegistry","GeocodeCache" CASCADE',
   );

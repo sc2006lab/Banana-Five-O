@@ -12,6 +12,7 @@ import {
   FAMILY_STAGES,
   FAMILY_STAGE_LABELS,
   PROXIMITY_RADII,
+  preferencesSchema,
   type AreaDto,
   type Criterion,
   type CriterionWeights,
@@ -21,7 +22,7 @@ import {
 import { api, ApiError, fmtDate } from '../lib/api';
 import { useApp } from '../state/AppState';
 import { AddressSearch } from '../components/AddressSearch';
-import { FieldError, Icon, Notice } from '../components/ui';
+import { FieldError, Icon, Notice, Spinner } from '../components/ui';
 
 type Draft = Omit<PreferencesDto, 'updatedAt'>;
 
@@ -34,13 +35,14 @@ export function PreferencesPage() {
   const [saving, setSaving] = useState(false);
   const [areaPick, setAreaPick] = useState('');
   const [newDestLabel, setNewDestLabel] = useState('');
+  const [waiting, setWaiting] = useState(false);
 
   useEffect(() => {
     void api<AreaDto[]>('/areas').then(setAreas).catch(() => undefined);
   }, []);
 
   useEffect(() => {
-    if (me && !prefs) return; // wait for saved profile
+    if (me && !prefs) { setDraft(null); return; }
     setDraft(
       prefs
         ? { ...prefs }
@@ -58,7 +60,18 @@ export function PreferencesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [me, prefs]);
 
-  if (!draft) return null;
+  if (!draft) return (
+    <div className="mx-auto max-w-xl px-4 py-12">
+      <h1 className="text-2xl font-bold text-burgundy">Family preferences</h1>
+      <Spinner label="Waiting for your saved preferences" />
+      <p className="text-muted">If this takes longer than expected, check your connection and retry.</p>
+      <button className="btn-secondary mt-4" disabled={waiting} onClick={async () => {
+        setWaiting(true);
+        try { await reloadPrefs(); } catch (e) { toast((e as Error).message, 'error'); }
+        finally { setWaiting(false); }
+      }}>{waiting ? 'Retrying…' : 'Retry loading'}</button>
+    </div>
+  );
   const set = (patch: Partial<Draft>) => setDraft((d) => ({ ...d!, ...patch }));
   const setWeight = (c: Criterion, v: number) =>
     set({ weights: { ...draft.weights, [c]: v }, confirmedWeights: draft.confirmedWeights.includes(c) ? draft.confirmedWeights : [...draft.confirmedWeights, c] });
@@ -88,6 +101,12 @@ export function PreferencesPage() {
 
   const save = async () => {
     setErrors({});
+    const validated = preferencesSchema.safeParse(draft);
+    if (!validated.success) {
+      setErrors(Object.fromEntries(validated.error.issues.map((issue) => [issue.path.join('.'), issue.message])));
+      toast('Please correct the highlighted preference fields.', 'error');
+      return;
+    }
     if (!me) {
       applyToSession();
       toast('Weights applied for this visit. Sign in to save them.', 'success');
@@ -95,7 +114,7 @@ export function PreferencesPage() {
     }
     setSaving(true);
     try {
-      await api<PreferencesDto>('/preferences', { method: 'PUT', body: draft });
+      await api<PreferencesDto>('/preferences', { method: 'PUT', body: validated.data });
       await reloadPrefs();
       toast('Family preferences saved.', 'success');
     } catch (e) {

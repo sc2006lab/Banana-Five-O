@@ -20,16 +20,6 @@ export const config = {
     email: env.ONEMAP_EMAIL ?? '',
     password: env.ONEMAP_PASSWORD ?? '',
   },
-  stripe: {
-    secretKey: env.STRIPE_SECRET_KEY ?? '',
-    webhookSecret: env.STRIPE_WEBHOOK_SECRET ?? '',
-    priceFamily: env.STRIPE_PRICE_FAMILY ?? '',
-    priceAdvisor: env.STRIPE_PRICE_ADVISOR ?? '',
-  },
-  billing: {
-    // Demo mode lets you try plan changes without payment when Stripe is not configured.
-    demo: (env.BILLING_DEMO ?? 'true') === 'true',
-  },
   mail: {
     smtpUrl: env.SMTP_URL ?? '',
     from: env.MAIL_FROM ?? 'FamPlan <no-reply@famplan.local>',
