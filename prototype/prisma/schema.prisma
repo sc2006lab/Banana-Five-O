@@ -166,6 +166,13 @@ model GeocodeCache {
   retrievedAt DateTime @default(now())
 }
 
+// Cross-instance cron coordination. An expired lease is recoverable after a killed function.
+model SyncLease {
+  sourceId String @id
+  owner String @db.Uuid
+  expiresAt DateTime
+}
+
 // ───────────── Decision support ─────────────
 
 model ShortlistEntry {

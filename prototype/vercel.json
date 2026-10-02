@@ -1,0 +1,27 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "buildCommand": "npm run vercel-build",
+  "outputDirectory": "client/dist",
+  "regions": ["sin1"],
+  "functions": {
+    "api/index.ts": { "maxDuration": 60, "includeFiles": "shared/dist/**" },
+    "api/cron.ts": { "maxDuration": 300, "includeFiles": "shared/dist/**" }
+  },
+  "rewrites": [
+    { "source": "/api/cron/:source", "destination": "/api/cron?source=:source" },
+    { "source": "/api/:path*", "destination": "/api" },
+    { "source": "/((?!api/|assets/).*)", "destination": "/index.html" }
+  ],
+  "crons": [
+    { "path": "/api/cron/ura-subzones", "schedule": "0 16 * * *" },
+    { "path": "/api/cron/ecda-preschools", "schedule": "0 17 * * *" },
+    { "path": "/api/cron/ecda-childcare", "schedule": "0 18 * * *" },
+    { "path": "/api/cron/moe-schools", "schedule": "0 19 * * *" },
+    { "path": "/api/cron/osm-supermarkets", "schedule": "0 20 * * *" },
+    { "path": "/api/cron/moh-chas-clinics", "schedule": "0 21 * * *" },
+    { "path": "/api/cron/nparks-parks", "schedule": "0 22 * * *" },
+    { "path": "/api/cron/lta-mrt-exits", "schedule": "0 23 * * *" },
+    { "path": "/api/cron/lta-bus-stops", "schedule": "0 0 * * *" }
+  ]
+}

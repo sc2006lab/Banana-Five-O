@@ -20,6 +20,8 @@ export function sourceStatus(
   now = new Date(),
 ): DataSourceStatusDto['status'] {
   if (running) return 'RUNNING';
+  if (s.status === 'RUNNING')
+    return s.lastAttemptAt && now.getTime() - s.lastAttemptAt.getTime() < 6 * 60_000 ? 'RUNNING' : 'DELAYED';
   if (!s.lastAttemptAt) return 'NEVER_RUN';
   if (s.status === 'FAILED') return 'FAILED';
   if (activeValidatedAt && (now.getTime() - activeValidatedAt.getTime()) / 86_400_000 > s.freshnessThresholdDays) return 'STALE';

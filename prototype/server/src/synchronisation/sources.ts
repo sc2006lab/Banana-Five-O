@@ -1,6 +1,7 @@
 // Data Source Registry configuration (NFR-MAINT-01): each configured public source is an isolated adapter.
 // Adding or replacing a source only touches this file.
 import type { AmenityCategory } from '@famplan/shared';
+import { checkSyncBudget, SyncBudgetError } from './budget.js';
 import { isInSingapore, polygonAreaSqm } from '../lib/geo.js';
 import { geocodeCached, OneMapAuthenticationError } from '../travel/onemap.js';
 import { datasetMetadata, downloadDataset, fetchWithTimeout, parseCsv, parseKmlDescription } from './datagovsg.js';
@@ -209,6 +210,7 @@ const moeSchools: FacilitySource = {
     let ungeocoded = 0;
     let inScope = 0;
     for (const r of rows) {
+      checkSyncBudget(20_000);
       const level = r.mainlevel_code.toUpperCase();
       const cats: AmenityCategory[] = [];
       if (level === 'PRIMARY' || level.includes('P1')) cats.push('primary_school');
@@ -217,7 +219,7 @@ const moeSchools: FacilitySource = {
       inScope++;
       const postal = r.postal_code.padStart(6, '0');
       const geo = await geocodeCached(`postal:${postal}`, postal).catch((error: unknown) => {
-        if (error instanceof OneMapAuthenticationError) throw error;
+        if (error instanceof OneMapAuthenticationError || error instanceof SyncBudgetError) throw error;
         return null;
       });
       if (!geo) {

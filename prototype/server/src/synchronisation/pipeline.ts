@@ -7,6 +7,7 @@ import { referencePoint } from '../lib/geo.js';
 import { sanitiseError } from '../lib/http.js';
 import { SOURCES, type BoundaryRecord, type FacilityRecord, type SourceDefinition } from './sources.js';
 import { datasetChecksum, diffCounts, recordHash, validateBoundaries, validateFacilities } from './validate.js';
+import { cloudSchedule } from './schedule.js';
 
 type Listener = () => Promise<void> | void;
 const listeners: Listener[] = [];
@@ -22,8 +23,8 @@ export async function ensureRegistry() {
   for (const s of SOURCES)
     await prisma.dataSourceRegistry.upsert({
       where: { id: s.id },
-      create: { id: s.id, name: s.name, provider: s.provider, schedule: config.sync.cron, freshnessThresholdDays: s.freshnessThresholdDays },
-      update: { name: s.name, provider: s.provider, schedule: config.sync.cron, freshnessThresholdDays: s.freshnessThresholdDays },
+      create: { id: s.id, name: s.name, provider: s.provider, schedule: cloudSchedule(s.id) ?? config.sync.cron, freshnessThresholdDays: s.freshnessThresholdDays },
+      update: { name: s.name, provider: s.provider, schedule: cloudSchedule(s.id) ?? config.sync.cron, freshnessThresholdDays: s.freshnessThresholdDays },
     });
 }
 

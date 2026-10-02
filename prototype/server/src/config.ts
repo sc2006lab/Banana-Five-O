@@ -7,7 +7,7 @@ export const config = {
   // Serve behind TLS: secure cookies, HSTS, and HTTP→HTTPS redirects (NFR-SEC-01). Defaults on in production.
   https: (env.HTTPS ?? (env.NODE_ENV === 'production' ? 'true' : 'false')) === 'true',
   isTest: env.NODE_ENV === 'test' || env.VITEST === 'true',
-  appOrigin: env.APP_ORIGIN ?? 'http://localhost:5173',
+  appOrigin: env.APP_ORIGIN ?? (env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${env.VERCEL_PROJECT_PRODUCTION_URL}` : 'http://localhost:5173'),
   sessionTtlHours: 12,
   resetTokenTtlMinutes: 30,
   sync: {
@@ -19,6 +19,7 @@ export const config = {
   onemap: {
     email: env.ONEMAP_EMAIL ?? '',
     password: env.ONEMAP_PASSWORD ?? '',
+    accessToken: env.ONEMAP_ACCESS_TOKEN ?? '',
   },
   mail: {
     smtpUrl: env.SMTP_URL ?? '',

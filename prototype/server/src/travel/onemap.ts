@@ -6,6 +6,7 @@ import { config } from '../config.js';
 import { fetchWithTimeout } from '../synchronisation/datagovsg.js';
 import { prisma } from '../db.js';
 import { isInSingapore } from '../lib/geo.js';
+import { postalCode } from './postal.js';
 
 const BASE = 'https://www.onemap.gov.sg';
 
@@ -46,6 +47,8 @@ async function throttle(minGapMs = 260) {
 }
 
 export async function searchAddress(q: string, limit = 6): Promise<GeocodeResult[]> {
+  const postal = postalCode(q);
+  if (postal) q = postal;
   const url = `${BASE}/api/common/elastic/search?searchVal=${encodeURIComponent(q)}&returnGeom=Y&getAddrDetails=Y&pageNum=1`;
   let lastErr = '';
   for (let attempt = 0; attempt < 3; attempt++) {
@@ -68,7 +71,7 @@ export async function searchAddress(q: string, limit = 6): Promise<GeocodeResult
           lat: Number(r.LATITUDE),
           lng: Number(r.LONGITUDE),
         }))
-        .filter((r) => isInSingapore(r.lat, r.lng))
+        .filter((r) => isInSingapore(r.lat, r.lng) && (!postal || r.postal === postal))
         .slice(0, limit);
     } catch (e) {
       if (e instanceof OneMapAuthenticationError) {
@@ -81,6 +84,14 @@ export async function searchAddress(q: string, limit = 6): Promise<GeocodeResult
   }
   markError(lastErr);
   throw new Error(`OneMap address search is unavailable right now (${lastErr}).`);
+}
+
+/** Residential postal search uses the same expiring cache as school geocoding. */
+export async function searchLocation(q: string, limit = 6): Promise<GeocodeResult[]> {
+  const postal = postalCode(q);
+  if (!postal) return searchAddress(q, limit);
+  const hit = await geocodeCached(`postal:${postal}`, postal);
+  return hit ? [{ ...hit, postal, label: hit.address }] : [];
 }
 
 /** Positive matches are refreshed weekly; empty results daily, so relocations can be picked up. */
@@ -104,14 +115,15 @@ export async function geocodeCached(key: string, query: string): Promise<{ lat: 
 let token: { value: string; expiresAt: number } | null = null;
 
 export function routingConfigured(): boolean {
-  return Boolean(config.onemap.email && config.onemap.password);
+  return Boolean(config.onemap.accessToken || (config.onemap.email && config.onemap.password));
 }
 
 async function getToken(): Promise<string> {
+  if (config.onemap.accessToken) return config.onemap.accessToken;
   if (token && token.expiresAt > Date.now() + 60_000) return token.value;
   const res = await fetchWithTimeout(
     `${BASE}/api/auth/post/getToken`,
-    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(config.onemap) },
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: config.onemap.email, password: config.onemap.password }) },
     8_000,
   );
   if (res.status === 401 || res.status === 403) throw new OneMapAuthenticationError();

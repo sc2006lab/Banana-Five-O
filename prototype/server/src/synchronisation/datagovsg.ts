@@ -2,9 +2,11 @@
 const META = 'https://api-production.data.gov.sg/v2/public/api/datasets';
 const DOWNLOAD = 'https://api-open.data.gov.sg/v1/public/api/datasets';
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+import { budgetSleep as sleep, checkSyncBudget, remainingSyncBudget } from './budget.js';
 
 export async function fetchWithTimeout(url: string, init: RequestInit = {}, timeoutMs = 60_000): Promise<Response> {
+  checkSyncBudget();
+  timeoutMs = Math.min(timeoutMs, remainingSyncBudget() - 1000);
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {

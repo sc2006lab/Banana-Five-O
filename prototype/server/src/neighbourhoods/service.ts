@@ -20,7 +20,7 @@ import {
 import { DISTANCE_BASIS, pointInBoundary } from '../lib/geo.js';
 import { HttpError } from '../lib/http.js';
 import { calculateScore } from '../scoring/score.js';
-import { searchAddress } from '../travel/onemap.js';
+import { searchLocation } from '../travel/onemap.js';
 import { index, type IndexedNeighbourhood } from './store.js';
 
 export interface ScoringContext {
@@ -125,8 +125,9 @@ export async function searchNeighbourhoods(p: SearchParams): Promise<SearchRespo
       // Address or postal code: geocode with OneMap, then rank neighbourhoods around the point.
       let hits;
       try {
-        hits = await searchAddress(p.q, 1);
-      } catch {
+        hits = await searchLocation(p.q, 1);
+      } catch (error) {
+        if (error instanceof HttpError) throw error;
         if (byName.length) {
           pool = byName;
           matchedBy = 'name';
@@ -139,6 +140,10 @@ export async function searchNeighbourhoods(p: SearchParams): Promise<SearchRespo
       if (hits) {
         const hit = hits[0];
         if (!hit) {
+          if (looksLikeAddress)
+            throw new HttpError(404, 'No Singapore address matches this postal code or address. Check the input and try again.', {
+              q: 'Use the full six-digit postal code or a complete Singapore street address.',
+            });
           pool = byName;
           matchedBy = 'name';
         } else {

@@ -96,6 +96,22 @@ Test fixtures refuse to clear a database whose name does not end in `_test`. Use
 
 This maps implemented code, not a claim that every acceptance scenario or NFR has been certified.
 
+## Vercel deployment
+
+Public application: https://famplan-amber.vercel.app/explore
+
+Deploy from the `prototype` directory, not the repository root. Vercel serves Vite's `client/dist` and two Node.js functions: the Express API and protected daily source refresh. PostgreSQL is the free Neon instance in Singapore; Prisma is unchanged. Shared types/schemas are compiled to JavaScript before deployment.
+
+Required production configuration: `DATABASE_URL` (pooled hosted PostgreSQL), `HTTPS=true`, `APP_ORIGIN` (public domain), `CRON_SECRET`, and OneMap authentication. Configure either `ONEMAP_ACCESS_TOKEN` or `ONEMAP_EMAIL`/`ONEMAP_PASSWORD`. Never use `VITE_` prefixes for secrets.
+
+The currently supplied OneMap token expires **5 October 2026**. Replace it and redeploy before expiry, or remove that token variable and configure account credentials for automatic renewal. The token is not embedded in the browser bundle.
+
+Singapore six-digit postal codes, including leading zeros, resolve through OneMap and an expiring database cache. The exact address is marked on the map; scores and amenity distances still describe the neighbourhood reference point, not the individual home. Nonexistent codes and provider failures are distinguished.
+
+Each data source has a daily cron window (UTC, approximately midnight–08:00 Singapore time). A database lease prevents duplicate runs of the same source. A fetch budget preserves time for activation; failed imports retain the last validated snapshot. Initial school geocoding can take several daily runs as successful geocodes are cached. Vercel Hobby scheduling is approximate, not an exact 04:00 promise.
+
+For a new hosted database, run migrations once, then use `server/src/scripts/copy-public-data.ts` with distinct source/target URLs to bootstrap **public datasets only** into an empty target. Never run the local demo-account seed against production. See [deployment verification](specs/vercel-postal_verification.md).
+
 ## Data and scoring limitations
 
 Sources remain isolated adapters in `server/src/synchronisation/sources.ts`: URA subzones, ECDA childcare/preschools, MOE schools, MOH CHAS clinics, NParks parks, LTA rail/bus data through data.gov.sg, OpenStreetMap supermarkets and OneMap.

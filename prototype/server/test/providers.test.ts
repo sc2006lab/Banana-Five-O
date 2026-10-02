@@ -64,7 +64,7 @@ describe('OneMap response contract', () => {
 
   it('accepts a valid public search response and returns provider coordinates', async () => {
     const { config } = await import('../src/config.js');
-    config.onemap = { email: '', password: '' };
+    config.onemap = { email: '', password: '', accessToken: '' };
     fetchMock.mockResolvedValue(json({ found: 1, results: [school] }));
     const { searchAddress } = await import('../src/travel/onemap.js');
     expect(await searchAddress('738907')).toEqual([expect.objectContaining({ lat: 1.4426, lng: 103.8 })]);
@@ -72,7 +72,7 @@ describe('OneMap response contract', () => {
 
   it('does not turn an HTTP 200 authentication error into an empty search', async () => {
     const { config } = await import('../src/config.js');
-    config.onemap = { email: '', password: '' };
+    config.onemap = { email: '', password: '', accessToken: '' };
     fetchMock.mockImplementation(async () => json({ error: 'Missing token' }));
     const { searchAddress, onemapHealth } = await import('../src/travel/onemap.js');
     const result = expect(searchAddress('738907')).rejects.toThrow('Configure valid OneMap credentials');
@@ -85,7 +85,7 @@ describe('OneMap response contract', () => {
 
   it('authenticates search when OneMap credentials are configured', async () => {
     const { config } = await import('../src/config.js');
-    config.onemap = { email: 'fixture@example.com', password: 'test-only' };
+    config.onemap = { email: 'fixture@example.com', password: 'test-only', accessToken: '' };
     fetchMock.mockResolvedValueOnce(json({ access_token: 'fixture-token', expiry_timestamp: String(Date.now() / 1000 + 3600) }))
       .mockResolvedValueOnce(json({ results: [school] }));
     const { searchAddress } = await import('../src/travel/onemap.js');
@@ -103,7 +103,7 @@ describe('OneMap response contract', () => {
 
   it('refreshes expired geocodes instead of retaining an old location forever', async () => {
     const { config } = await import('../src/config.js');
-    config.onemap = { email: '', password: '' };
+    config.onemap = { email: '', password: '', accessToken: '' };
     const { prisma } = await import('../src/db.js');
     vi.spyOn(prisma.geocodeCache, 'findUnique').mockResolvedValue({ key: 'postal:738907', lat: 1.3, lng: 103.7, address: 'Old address', retrievedAt: new Date(Date.now() - 8 * 86_400_000) });
     const upsert = vi.spyOn(prisma.geocodeCache, 'upsert').mockResolvedValue({ key: 'postal:738907', lat: 1.4426, lng: 103.8, address: 'Updated address', retrievedAt: new Date() });

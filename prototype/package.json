@@ -11,7 +11,10 @@
   ],
   "scripts": {
     "dev": "concurrently -n server,client -c auto \"npm:dev -w server\" \"npm:dev -w client\"",
-    "build": "npm run build -w client",
+    "build": "npm run build -w shared && npm run build -w client",
+    "predev": "npm run build -w shared",
+    "pretest": "npm run build -w shared",
+    "vercel-build": "prisma generate && npm run build",
     "start": "npm run start -w server",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",

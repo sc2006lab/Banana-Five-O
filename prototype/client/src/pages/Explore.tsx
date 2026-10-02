@@ -47,14 +47,15 @@ let remembered: Filters = EMPTY; // survives navigation to a profile and back
 
 const radiusLabel = (r: number) => (r >= 1000 ? `${r / 1000} km` : `${r} m`);
 
-function FitToResults({ results, focus }: { results: NeighbourhoodSummary[]; focus: { lat: number; lng: number } | null }) {
+function FitToResults({ results, focus, view }: { results: NeighbourhoodSummary[]; focus: { lat: number; lng: number } | null; view: string }) {
   const map = useMap();
   const key = results.map((r) => r.id).join(',');
   useEffect(() => {
+    map.invalidateSize();
     if (focus) map.setView([focus.lat, focus.lng], 14);
     else if (results.length) map.fitBounds(L.latLngBounds(results.map((r) => [r.lat, r.lng])), { padding: [40, 40], maxZoom: 14 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, focus?.lat, focus?.lng]);
+  }, [key, focus?.lat, focus?.lng, view]);
   return null;
 }
 
@@ -217,7 +218,7 @@ export function ExplorePage() {
       <section className={`relative flex-1 ${view === 'map' ? 'block' : 'hidden'} md:block`} aria-label="Map of results">
         <MapContainer center={SG_CENTER} zoom={12} maxBounds={SG_BOUNDS} className="h-full w-full" scrollWheelZoom>
           <OneMapTiles />
-          <FitToResults results={results} focus={data?.addressMatch ?? null} />
+          <FitToResults results={results} focus={data?.addressMatch ?? null} view={view} />
           {results.map((r) => (
             <Marker
               key={r.id}
@@ -236,6 +237,9 @@ export function ExplorePage() {
             <Marker position={[data.addressMatch.lat, data.addressMatch.lng]} icon={pinIcon('You searched here', '#2a000c')} alt={data.addressMatch.address} />
           )}
         </MapContainer>
+        <button className="btn-dark absolute top-4 right-4 z-[1000] md:hidden" onClick={() => setView('list')}>
+          Show results
+        </button>
         {compareIds.length > 0 && (
           <div className="absolute bottom-6 left-1/2 z-[1000] flex -translate-x-1/2 items-center gap-3 rounded-full bg-burgundy py-2 pr-2 pl-5 text-sm text-white shadow-float">
             {compareIds.length} selected to compare
@@ -260,6 +264,12 @@ export function ExplorePage() {
             role="search"
             onSubmit={(e) => {
               e.preventDefault();
+              const candidate = draftQ.trim();
+              if (/^(?:Singapore\s*|S\s*\(?)?\d+\s*\)?$/i.test(candidate)
+                && !/^(?:Singapore\s*|S\s*\(?)?\d{6}\s*\)?$/i.test(candidate)) {
+                toast('Enter all six digits of the Singapore postal code, including any leading zero.');
+                return;
+              }
               update({ q: draftQ.trim() });
             }}
           >
@@ -271,7 +281,7 @@ export function ExplorePage() {
               <input
                 id="q"
                 className="input pl-10"
-                placeholder="Town, estate, address or postal code"
+                placeholder="Singapore postal code, address or town"
                 value={draftQ}
                 onChange={(e) => setDraftQ(e.target.value)}
                 aria-invalid={Boolean(fieldErr('q'))}
@@ -280,6 +290,9 @@ export function ExplorePage() {
             <button className="btn-dark">Search</button>
           </form>
           <FieldError msg={fieldErr('q')} />
+          <p className="mt-2 text-xs text-muted">
+            Enter a six-digit Singapore postal code (e.g. 238801), or a street address or town name.
+          </p>
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <Dropdown label={f.areas.length ? `Areas (${f.areas.length})` : 'Area'} active={f.areas.length > 0} width="w-80">
@@ -464,7 +477,9 @@ export function ExplorePage() {
           {data?.matchedBy === 'address' && data.addressMatch && (
             <Notice className="mb-3">
               Showing neighbourhoods around <strong>{data.addressMatch.address}</strong>
-              {data.addressMatch.neighbourhoodId ? ' — the first result contains this address.' : '.'}
+              {data.addressMatch.neighbourhoodId && results[0]?.id === data.addressMatch.neighbourhoodId
+                ? ' — the first result contains this address.' : '.'}
+              {' '}Scores and amenity distances describe the neighbourhood reference point, not your individual home.
             </Notice>
           )}
           {data && data.total === 0 && !loading && (

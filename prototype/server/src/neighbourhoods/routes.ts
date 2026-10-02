@@ -14,7 +14,7 @@ import {
 } from '@famplan/shared';
 import { HttpError, parse } from '../lib/http.js';
 import { SCORING_CONFIG, COMMUTE_MODEL } from '../scoring/config.js';
-import { searchAddress } from '../travel/onemap.js';
+import { searchLocation } from '../travel/onemap.js';
 import { routeEstimate } from '../travel/route.js';
 import { index } from './store.js';
 import { buildShowcase } from './showcase.js';
@@ -52,8 +52,9 @@ neighbourhoodRouter.get('/areas', (_req, res) => {
 neighbourhoodRouter.get('/geocode', async (req, res) => {
   const { q } = parse(geocodeQuerySchema, req.query);
   try {
-    res.json(await searchAddress(q));
-  } catch {
+    res.json(await searchLocation(q));
+  } catch (error) {
+    if (error instanceof HttpError) throw error;
     throw new HttpError(503, 'Address search (OneMap) is temporarily unavailable. Try again shortly.');
   }
 });
