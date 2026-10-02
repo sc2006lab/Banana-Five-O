@@ -2,7 +2,7 @@
 // Adding or replacing a source only touches this file.
 import type { AmenityCategory } from '@famplan/shared';
 import { isInSingapore, polygonAreaSqm } from '../lib/geo.js';
-import { geocodeCached } from '../travel/onemap.js';
+import { geocodeCached, OneMapAuthenticationError } from '../travel/onemap.js';
 import { datasetMetadata, downloadDataset, fetchWithTimeout, parseCsv, parseKmlDescription } from './datagovsg.js';
 
 export interface FacilityRecord {
@@ -200,7 +200,7 @@ const moeSchools: FacilitySource = {
   async fetch() {
     const [meta, text] = await Promise.all([
       datasetMetadata('d_688b934f82c1059ed0a6993d2a829089'),
-      downloadDataset('d_688b934f82c1059ed0a6993d2a829089'),
+      downloadDataset('d_688b934f82c1059ed0a6993d2a829089', { initiate: true }),
     ]);
     const rows = parseCsv(text);
     if (!rows.length || !('school_name' in rows[0]) || !('postal_code' in rows[0]))
@@ -216,7 +216,10 @@ const moeSchools: FacilitySource = {
       if (!cats.length) continue; // JCs and centralised institutes are out of scope
       inScope++;
       const postal = r.postal_code.padStart(6, '0');
-      const geo = await geocodeCached(`postal:${postal}`, postal).catch(() => null);
+      const geo = await geocodeCached(`postal:${postal}`, postal).catch((error: unknown) => {
+        if (error instanceof OneMapAuthenticationError) throw error;
+        return null;
+      });
       if (!geo) {
         ungeocoded++;
         continue;

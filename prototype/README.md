@@ -42,7 +42,7 @@ Open http://localhost:5173. Express runs on port 3001. At startup it checks for 
 
 Optional integrations:
 
-- `ONEMAP_EMAIL` / `ONEMAP_PASSWORD`: live routes. Without them, the app states live routing is unavailable and labels modelled travel estimates.
+- `ONEMAP_EMAIL` / `ONEMAP_PASSWORD`: authenticated address search, school geocoding and live routes. OneMap documents authentication for search as well as routing. Public search responses are accepted when provided, but authentication errors stop the school refresh and preserve its last valid snapshot. Without credentials, live routes are unavailable and travel estimates are labelled.
 - `SMTP_URL` / `MAIL_FROM`: real password-reset delivery. Without SMTP, the reset endpoint returns an availability message. Reset links are never printed to logs.
 - `HTTPS=true`, a TLS-terminating reverse proxy, and the real `APP_ORIGIN`: production deployment. Configure TLS 1.2+ at the proxy. Never submit real credentials over an HTTP deployment.
 
@@ -107,5 +107,7 @@ Distances are straight-line distances from a neighbourhood reference point, not 
 Scores use disclosed normalisation and weights, with exact .5 rounded upward. Missing criteria are excluded; if all available criteria have weight zero, the documented equal-weight fallback applies. Live-route estimates and locally modelled commute times are distinguished.
 
 ## Verification and remaining evidence
+
+The local real-data run and assignment demonstration steps are documented in [real-data demonstration](specs/live-data_verification.md). These are provider datasets retrieved through APIs and refreshed daily, with publisher dates shown; they are not real-time childcare vacancy or school admission feeds.
 
 See [implementation verification](specs/family-planning-v1-1_verification.md). Performance at 100,000 records/100 concurrent users, the one-hour reliability target, moderated usability trials, full WCAG AA review and the required multi-browser matrix need separate acceptance evidence. Do not describe the prototype as meeting all 29 NFRs merely because the build and unit tests pass.

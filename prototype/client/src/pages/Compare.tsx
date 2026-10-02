@@ -2,6 +2,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
+  AMENITY_LABELS,
   COMPARE_MAX,
   COMPARE_MIN,
   LIMITATION_EDUCATION,
@@ -210,6 +211,16 @@ export function ComparePage() {
               </tr>
             </thead>
             <tbody>
+              <Row icon="info" label="Data coverage" items={items} render={(i) => {
+                const warnings = i.detail.amenities.filter((a) => ['INCOMPLETE', 'UNAVAILABLE', 'STALE'].includes(a.state));
+                return <div className="space-y-2">
+                  {warnings.length ? warnings.map((a) => <div key={a.category}>
+                    <p className="font-semibold">{AMENITY_LABELS[a.category]} <StateBadge state={a.state} /></p>
+                    {a.stateReason && <p className="text-xs text-muted">{a.stateReason}</p>}
+                  </div>) : <p className="text-xs text-muted">All configured amenity datasets are available.</p>}
+                  <Link to={`/n/${i.id}`} className="text-xs text-burgundy underline">View sources and retrieval dates</Link>
+                </div>;
+              }} />
               <Row icon="target" label="Suitability match" items={items} shade render={(i) => (
                 <div>
                   <div className="mb-3 flex items-center justify-between gap-2">

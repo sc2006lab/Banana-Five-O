@@ -25,8 +25,9 @@ async function getJsonWithRetry(url: string, attempts = 6): Promise<any> {
   for (let i = 0; i < attempts; i++) {
     const res = await fetchWithTimeout(url);
     const body = await res.json().catch(() => null);
-    if (body && body.code === 24) {
-      await sleep(11_000); // "Rate limit exceeded. Please try again in 10 seconds"
+    if (res.status === 429 || body?.code === 24) {
+      const retryAfter = Number(res.headers.get('Retry-After'));
+      await sleep(Number.isFinite(retryAfter) && retryAfter > 0 ? Math.min(retryAfter, 60) * 1000 : 11_000);
       continue;
     }
     if (!res.ok || !body) throw new Error(`data.gov.sg responded ${res.status} for ${url.split('?')[0]}`);
@@ -41,8 +42,15 @@ export async function datasetMetadata(datasetId: string): Promise<{ name: string
   return { name: d.name, lastUpdatedAt: d.lastUpdatedAt ? new Date(d.lastUpdatedAt) : null };
 }
 
-export async function downloadDataset(datasetId: string): Promise<string> {
-  const d = await getJsonWithRetry(`${DOWNLOAD}/${datasetId}/poll-download`);
+export async function downloadDataset(datasetId: string, options: { initiate?: boolean } = {}): Promise<string> {
+  // CSV exports must be prepared first; geospatial files can be polled directly.
+  // https://guide.data.gov.sg/developer-guide/dataset-apis/download-dataset
+  if (options.initiate) await getJsonWithRetry(`${DOWNLOAD}/${datasetId}/initiate-download`);
+  let d = await getJsonWithRetry(`${DOWNLOAD}/${datasetId}/poll-download`);
+  for (let attempt = 0; !d?.url && attempt < 4; attempt++) {
+    await sleep(12_000);
+    d = await getJsonWithRetry(`${DOWNLOAD}/${datasetId}/poll-download`);
+  }
   if (!d?.url) throw new Error(`data.gov.sg did not return a download URL for ${datasetId}`);
   const res = await fetchWithTimeout(d.url, {}, 120_000);
   if (!res.ok) throw new Error(`Dataset download failed with HTTP ${res.status}`);

@@ -1,5 +1,6 @@
 // OneMap (Singapore Land Authority) adapter: address search/geocoding and routing.
-// Routing needs an API token (ONEMAP_EMAIL / ONEMAP_PASSWORD); search works without one.
+// OneMap documents token authentication for search and routing. Public search responses
+// are accepted when the provider serves them; configured credentials authenticate both.
 import type { GeocodeResult } from '@famplan/shared';
 import { config } from '../config.js';
 import { fetchWithTimeout } from '../synchronisation/datagovsg.js';
@@ -7,6 +8,13 @@ import { prisma } from '../db.js';
 import { isInSingapore } from '../lib/geo.js';
 
 const BASE = 'https://www.onemap.gov.sg';
+
+export class OneMapAuthenticationError extends Error {
+  constructor() {
+    super('OneMap authentication is required. Configure valid OneMap credentials.');
+    this.name = 'OneMapAuthenticationError';
+  }
+}
 
 /** Health of the live dependency, surfaced on the administration page. */
 export const onemapHealth = {
@@ -43,9 +51,14 @@ export async function searchAddress(q: string, limit = 6): Promise<GeocodeResult
   for (let attempt = 0; attempt < 3; attempt++) {
     await throttle(attempt === 0 ? 260 : 1500 * attempt);
     try {
-      const res = await fetchWithTimeout(url, {}, 8_000);
+      const headers: Record<string, string> = routingConfigured() ? { Authorization: await getToken() } : {};
+      const res = await fetchWithTimeout(url, { headers }, 8_000);
+      if (res.status === 401 || res.status === 403) throw new OneMapAuthenticationError();
       if (!res.ok) throw new Error(`OneMap search HTTP ${res.status}`);
-      const body = (await res.json()) as { results?: any[] };
+      const body = (await res.json()) as { results?: any[]; error?: unknown };
+      if (body.error && /token|auth|forbidden/i.test(String(body.error))) throw new OneMapAuthenticationError();
+      if (body.error || !Array.isArray(body.results))
+        throw new Error('OneMap search did not return valid results. Configure valid OneMap credentials if authentication is required.');
       markOk();
       return (body.results ?? [])
         .map((r) => ({
@@ -58,6 +71,11 @@ export async function searchAddress(q: string, limit = 6): Promise<GeocodeResult
         .filter((r) => isInSingapore(r.lat, r.lng))
         .slice(0, limit);
     } catch (e) {
+      if (e instanceof OneMapAuthenticationError) {
+        token = null;
+        markError(e.message);
+        throw e; // Retrying without different credentials cannot fix an authentication rejection.
+      }
       lastErr = (e as Error).message;
     }
   }
@@ -65,10 +83,12 @@ export async function searchAddress(q: string, limit = 6): Promise<GeocodeResult
   throw new Error(`OneMap address search is unavailable right now (${lastErr}).`);
 }
 
-/** Geocode with a persistent cache (used by synchronisation for school postal codes). */
+/** Positive matches are refreshed weekly; empty results daily, so relocations can be picked up. */
 export async function geocodeCached(key: string, query: string): Promise<{ lat: number; lng: number; address: string } | null> {
   const hit = await prisma.geocodeCache.findUnique({ where: { key } });
-  if (hit) return hit.lat !== null && hit.lng !== null ? { lat: hit.lat, lng: hit.lng, address: hit.address ?? '' } : null;
+  const maxAge = hit?.lat !== null && hit?.lng !== null ? 7 * 86_400_000 : 86_400_000;
+  if (hit && Date.now() - hit.retrievedAt.getTime() < maxAge)
+    return hit.lat !== null && hit.lng !== null ? { lat: hit.lat, lng: hit.lng, address: hit.address ?? '' } : null;
   const results = await searchAddress(query, 1);
   const r = results[0] ?? null;
   await prisma.geocodeCache.upsert({
@@ -94,8 +114,11 @@ async function getToken(): Promise<string> {
     { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(config.onemap) },
     8_000,
   );
+  if (res.status === 401 || res.status === 403) throw new OneMapAuthenticationError();
   if (!res.ok) throw new Error(`OneMap authentication failed (HTTP ${res.status})`);
   const body = (await res.json()) as { access_token: string; expiry_timestamp: string };
+  if (!body.access_token || !Number.isFinite(Number(body.expiry_timestamp)))
+    throw new Error('OneMap authentication returned an invalid token response.');
   token = { value: body.access_token, expiresAt: Number(body.expiry_timestamp) * 1000 };
   return token.value;
 }
