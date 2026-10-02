@@ -20,10 +20,10 @@ export function OneMapTiles() {
 
 /** Distinguishable by colour AND icon glyph (not colour alone). */
 export const CATEGORY_COLORS: Record<AmenityCategory, string> = {
-  childcare: '#b23a48',
+  childcare: '#c51a27',
   kindergarten: '#d9534f',
-  primary_school: '#461220',
-  secondary_school: '#7a3b52',
+  primary_school: '#a81724',
+  secondary_school: '#79313a',
   supermarket: '#1d6b3a',
   clinic: '#0b5c8a',
   park_playground: '#4c7a1e',
@@ -59,7 +59,7 @@ export function pinIcon(label: string, color: string): L.DivIcon {
 export function homeIcon(): L.DivIcon {
   return L.divIcon({
     className: '',
-    html: `<div class="fp-marker" style="width:34px;height:34px;background:#461220"><span class="material-symbols-outlined" style="font-size:20px">home</span></div>`,
+    html: `<div class="fp-marker" style="width:34px;height:34px;background:#c51a27"><span class="material-symbols-outlined" style="font-size:20px">home</span></div>`,
     iconSize: [34, 34],
     iconAnchor: [17, 17],
   });

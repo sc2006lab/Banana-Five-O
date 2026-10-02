@@ -20,8 +20,9 @@ describe('family-focused interface', () => {
   it('offers exploration and preferences without paid plans, and handles missing showcase data', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
     render(<MemoryRouter><LandingPage /></MemoryRouter>);
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('family');
-    expect(screen.getByRole('link', { name: /Explore neighbourhoods/i })).toHaveAttribute('href', '/explore');
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('family-friendly neighbourhood in Singapore');
+    expect(screen.getByRole('link', { name: /Search by postal code/i })).toHaveAttribute('href', '/explore');
+    expect(screen.getByText(/Not a government service/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Family preferences' })).toHaveAttribute('href', '/preferences');
     expect(screen.queryByText(/Pricing|S\$6|S\$39|Choose Family|Built for advisors/i)).not.toBeInTheDocument();
     expect(await screen.findByRole('status')).toHaveTextContent('Cannot reach FamPlan');

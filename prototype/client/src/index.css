@@ -1,27 +1,27 @@
 @import 'tailwindcss';
 @import 'leaflet/dist/leaflet.css';
 
-/* Warm Institutional design system (Lab 1 UI mockups / DESIGN.md) */
+/* Singapore-inspired civic palette. Legacy token names stay stable across screens. */
 @theme {
   --font-sans: 'Public Sans', ui-sans-serif, system-ui, sans-serif;
-  --font-display: 'Instrument Serif', 'Times New Roman', serif;
+  --font-display: 'Public Sans', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'DM Mono', ui-monospace, SFMono-Regular, monospace;
 
-  --color-burgundy: #461220;
-  --color-burgundy-deep: #2a000c;
-  --color-cinnabar: #b23a48;
-  --color-cinnabar-dark: #93283a;
-  --color-salmon: #fcb9b2;
-  --color-peach: #fed0bb;
-  --color-blush: #fff0f0;
-  --color-surface: #fff8f7;
-  --color-surface-warm: #fffcfb;
-  --color-ink: #2d1619;
-  --color-muted: #5d4447;
-  --color-line: #d5b9bc;
-  --color-line-soft: #f0dfe0;
-  --color-paper: #faf5ef;
-  --color-faint: #e4d6d0;
+  --color-burgundy: #a81724;
+  --color-burgundy-deep: #85121c;
+  --color-cinnabar: #c51a27;
+  --color-cinnabar-dark: #a81724;
+  --color-salmon: #f3c6cb;
+  --color-peach: #fbe8ea;
+  --color-blush: #fff3f4;
+  --color-surface: #ffffff;
+  --color-surface-warm: #ffffff;
+  --color-ink: #202124;
+  --color-muted: #555b65;
+  --color-line: #cbd0d6;
+  --color-line-soft: #e5e7eb;
+  --color-paper: #f6f7f8;
+  --color-faint: #dce0e5;
 
   --color-good: #1d6b3a;
   --color-good-bg: #e3f3e8;
@@ -31,7 +31,7 @@
   --color-poor-bg: #ffe3e3;
 
   --radius-DEFAULT: 0.25rem;
-  --shadow-float: 0px 8px 24px rgba(70, 18, 32, 0.12);
+  --shadow-float: 0px 4px 16px rgba(20, 24, 30, 0.08);
 }
 
 html,
@@ -45,6 +45,13 @@ body {
   color: var(--color-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 {
+  font-weight: 650;
+}
+h1:not(.text-white), h2:not(.text-white), h3:not(.text-white) {
+  color: var(--color-ink);
 }
 
 .material-symbols-outlined {
@@ -92,7 +99,7 @@ body {
     @apply px-3 py-1.5 text-xs;
   }
   .card {
-    @apply rounded-lg border border-burgundy/10 bg-white;
+    @apply rounded-md border border-line-soft bg-white;
   }
   .chip {
     @apply inline-flex items-center gap-1 rounded bg-salmon/70 px-2 py-0.5 text-xs font-medium text-burgundy;
@@ -105,7 +112,7 @@ body {
     @apply border-burgundy bg-burgundy text-white hover:bg-burgundy-deep;
   }
   .input {
-    @apply w-full rounded border border-line bg-white px-3 py-2 text-sm text-ink placeholder:text-muted/70 focus:border-cinnabar focus:shadow-[0_0_0_3px_rgba(254,208,187,0.9)] focus:outline-none;
+    @apply w-full rounded border border-line bg-white px-3 py-2 text-sm text-ink placeholder:text-muted/70 focus:border-cinnabar focus:shadow-[0_0_0_3px_rgba(197,26,39,0.12)] focus:outline-none;
   }
   .input[aria-invalid='true'] {
     @apply border-poor;
@@ -177,8 +184,8 @@ body {
 }
 
 .reveal {
-  opacity: 0;
-  transform: translateY(18px);
+  opacity: 1;
+  transform: none;
   transition:
     opacity 900ms var(--ease-out),
     transform 900ms var(--ease-out);
@@ -189,7 +196,7 @@ body {
 }
 
 .page-enter {
-  animation: page-in 520ms var(--ease-out) both;
+  animation: none;
 }
 @keyframes page-in {
   from {
@@ -203,8 +210,7 @@ body {
 }
 
 .stagger > * {
-  animation: rise 700ms var(--ease-out) both;
-  animation-delay: calc(var(--i, 0) * 55ms);
+  animation: none;
 }
 @keyframes rise {
   from {
@@ -247,7 +253,7 @@ body {
   transition: transform 900ms var(--ease-out);
 }
 .rosette-halo {
-  animation: halo 3.2s var(--ease-in-out) infinite;
+  animation: none;
   transform-box: view-box;
   transform-origin: 0 0;
 }
@@ -308,9 +314,7 @@ body {
   animation: appear 500ms ease-out forwards;
 }
 .survey-map.is-on .sm-ring {
-  animation:
-    ring-in 1200ms var(--ease-out) forwards,
-    ring-breathe 4.8s var(--ease-in-out) 3.8s infinite;
+  animation: ring-in 350ms var(--ease-out) forwards;
 }
 .survey-map.is-on .sm-core {
   animation: appear 400ms ease-out 2.6s forwards;
@@ -356,7 +360,7 @@ body {
 }
 
 .marquee {
-  animation: marquee 40s linear infinite;
+  animation: none;
 }
 @keyframes marquee {
   to {
@@ -365,7 +369,7 @@ body {
 }
 
 .float-slow {
-  animation: float 9s var(--ease-in-out) infinite;
+  animation: none;
 }
 @keyframes float {
   0%,
@@ -395,20 +399,14 @@ body {
 
 /* Survey graticule backdrop */
 .graticule {
-  background-image:
-    linear-gradient(to right, rgba(70, 18, 32, 0.045) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(70, 18, 32, 0.045) 1px, transparent 1px);
-  background-size: 64px 64px;
-  mask-image: radial-gradient(ellipse at 60% 40%, black 30%, transparent 75%);
+  background-image: none;
 }
 .graticule-dark {
-  background-image:
-    linear-gradient(to right, rgba(254, 208, 187, 0.07) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(254, 208, 187, 0.07) 1px, transparent 1px);
+  background-image: none;
 }
 
 .sm-zone:focus-visible {
-  outline: 2px solid #461220;
-  stroke: #461220;
+  outline: 2px solid #a81724;
+  stroke: #a81724;
   stroke-width: 2;
 }

@@ -1,11 +1,10 @@
-// Marketing landing page — the "Tender Survey" plate brought to life with live data.
+// Singapore neighbourhood planning: clear actions and public-data evidence.
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CRITERIA, CRITERION_ICONS, CRITERION_LABELS } from '@famplan/shared';
 import { api } from '../lib/api';
-import { CountUp, Reveal, useTweened, usePrefersReducedMotion } from '../lib/motion';
-import { Rosette } from '../components/Rosette';
-import { LADDER, SurveyMap, toneFor, type Showcase, type ShowcaseZone } from '../components/SurveyMap';
+import { CountUp, Reveal, useTweened } from '../lib/motion';
+import { LADDER, SurveyMap, type Showcase, type ShowcaseZone } from '../components/SurveyMap';
 import { Icon } from '../components/ui';
 
 const SOURCES = [
@@ -38,7 +37,7 @@ function Eyebrow({ children, className = '' }: { children: string; className?: s
 
 function Hero({ data, error }: { data: Showcase | null; error: string | null }) {
   return (
-    <section className="relative overflow-hidden border-b border-line-soft bg-paper">
+    <section className="relative overflow-hidden border-b border-line-soft bg-white">
       <div className="graticule pointer-events-none absolute inset-0" aria-hidden="true" />
       <div className="relative mx-auto grid max-w-[1440px] items-center gap-10 px-4 pt-14 pb-16 md:px-10 lg:grid-cols-12 lg:pt-20 lg:pb-24">
         <div className="lg:col-span-5">
@@ -46,19 +45,18 @@ function Hero({ data, error }: { data: Showcase | null; error: string | null }) 
             <Eyebrow>Family neighbourhood planning · Singapore</Eyebrow>
           </Reveal>
           <Reveal delay={80}>
-            <h1 className="mt-5 font-display text-[44px] leading-[1.02] tracking-tight text-burgundy sm:text-6xl xl:text-7xl">
-              Find the neighbourhood that fits the family you’re <em className="text-cinnabar">becoming.</em>
+            <h1 className="mt-5 font-display text-4xl leading-tight tracking-tight text-ink sm:text-5xl">
+              Find a family-friendly neighbourhood in Singapore.
             </h1>
           </Reveal>
           <Reveal delay={180}>
             <p className="mt-6 max-w-lg text-lg leading-8 text-muted">
-              FamPlan uses available public data on childcare, schools, supermarkets, clinics, parks and transport to compare neighbourhoods against
-              <em> your</em> priorities, and shows exactly how.
+              Search your postal code or town. Compare childcare, schools, shops and transport using public data, then shortlist the areas that suit your family.
             </p>
           </Reveal>
           <Reveal delay={260} className="mt-8 flex flex-wrap gap-3">
             <Link to="/explore" className="btn-primary px-6 py-3 text-base">
-              Explore neighbourhoods
+              Search by postal code
               <Icon name="arrow_forward" className="!text-[20px]" />
             </Link>
             <Link to="/register" className="btn-secondary px-6 py-3 text-base">
@@ -93,8 +91,8 @@ function Hero({ data, error }: { data: Showcase | null; error: string | null }) 
               error ? <div role="status" className="card p-8 text-muted">{error} You can still set your family preferences and try Explore.</div> : <div className="skeleton aspect-[1000/629] w-full rounded-lg" aria-label="Loading map" />
             )}
             <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-2" aria-label="Legend: warmth of fit">
-                <span className="font-mono text-[10px] tracking-widest text-muted uppercase">Warmth of fit</span>
+              <div className="flex items-center gap-2" aria-label="Legend: family suitability score, low to high">
+                <span className="text-xs text-muted">Family suitability score · low to high</span>
                 <span className="flex">
                   {LADDER.map((c) => (
                     <span key={c} className="h-2.5 w-7" style={{ background: c }} />
@@ -115,17 +113,11 @@ function Hero({ data, error }: { data: Showcase | null; error: string | null }) 
 }
 
 function SourcesMarquee() {
-  const reduced = usePrefersReducedMotion();
-  const row = [...SOURCES, ...SOURCES];
   return (
-    <section className="overflow-hidden border-b border-line-soft bg-burgundy py-4 text-peach" aria-label="Data sources">
-      <div className={`flex w-max gap-10 whitespace-nowrap ${reduced ? '' : 'marquee'}`}>
-        {row.map((s, i) => (
-          <span key={i} className="flex items-center gap-10 font-mono text-xs tracking-[0.22em] uppercase" aria-hidden={i >= SOURCES.length}>
-            {s}
-            <span className="text-cinnabar">✦</span>
-          </span>
-        ))}
+    <section className="border-b border-line-soft bg-paper" aria-label="Data sources">
+      <div className="mx-auto max-w-[1200px] px-4 py-5 text-sm md:px-10">
+        <p className="font-semibold text-ink">Built on Singapore public data</p>
+        <p className="mt-1 leading-6 text-muted">{SOURCES.join(' · ')}</p>
       </div>
     </section>
   );
@@ -144,9 +136,21 @@ function EightMeasures({ data }: { data: Showcase | null }) {
         <Reveal className="order-2 flex flex-col items-center lg:order-1">
           <div className="relative">
             {z ? (
-              <Rosette key="hero-rosette" values={z.petals!} size={420} labels tone={toneFor(z.score ?? 0)} className="max-w-full" />
+              <dl className="card w-full min-w-[280px] space-y-4 p-6">
+                {CRITERIA.map((criterion, k) => (
+                  <div key={criterion}>
+                    <div className="flex items-baseline justify-between gap-6 text-sm">
+                      <dt>{CRITERION_LABELS[criterion]}</dt>
+                      <dd className="font-semibold">{z.petals![k] === null ? 'No data' : `${Math.round(z.petals![k]! * 100)}%`}</dd>
+                    </div>
+                    <div className="mt-1 h-1.5 rounded bg-paper" aria-hidden="true">
+                      <div className="h-full rounded bg-cinnabar" style={{width:`${(z.petals![k] ?? 0) * 100}%`}} />
+                    </div>
+                  </div>
+                ))}
+              </dl>
             ) : (
-              <div className="skeleton h-[420px] w-[420px] max-w-full rounded-full" />
+              <div className="skeleton h-80 w-72 max-w-full rounded-md" />
             )}
           </div>
           {z && (
@@ -171,13 +175,12 @@ function EightMeasures({ data }: { data: Showcase | null }) {
         </Reveal>
         <div className="order-1 lg:order-2">
           <Reveal>
-            <Eyebrow>The ledger</Eyebrow>
-            <h2 className="mt-4 font-display text-5xl leading-[1.05] text-burgundy">
-              Eight measures of <em>nearness</em>, weighed your way.
+            <Eyebrow>Your family priorities</Eyebrow>
+            <h2 className="mt-4 font-display text-3xl leading-tight text-ink">
+              Compare the things your family needs nearby.
             </h2>
             <p className="mt-5 max-w-md text-muted">
-              Each petal is one criterion, normalised from 0 to 1 using published rules. Turn any of them up or down from 0 to 5, and every score on
-              FamPlan recalculates, with the maths shown.
+              Choose how much each factor matters, from 0 to 5. FamPlan updates the neighbourhood scores and shows the calculation.
             </p>
           </Reveal>
           <ul className="mt-8 grid gap-x-8 gap-y-4 sm:grid-cols-2">
@@ -210,7 +213,7 @@ function HowItWorks() {
     {
       n: '02',
       icon: 'travel_explore',
-      title: 'We survey the city',
+      title: 'Check the neighbourhood',
       body: 'Public datasets are checked automatically. If a source fails, the last validated data stays available, with freshness and coverage warnings.',
     },
     {
@@ -225,7 +228,7 @@ function HowItWorks() {
       <div className="mx-auto max-w-[1200px] px-4 py-24 md:px-10">
         <Reveal className="max-w-2xl">
           <Eyebrow>Method</Eyebrow>
-          <h2 className="mt-4 font-display text-5xl leading-[1.05] text-burgundy">A survey, not a sales pitch.</h2>
+          <h2 className="mt-4 font-display text-3xl leading-tight text-ink">How to use FamPlan</h2>
         </Reveal>
         <ol className="mt-14 grid gap-6 md:grid-cols-3">
           {steps.map((s, k) => (
@@ -259,7 +262,7 @@ function Honesty() {
         <div className="grid gap-12 lg:grid-cols-12">
           <Reveal className="lg:col-span-4">
             <Eyebrow>Principles</Eyebrow>
-            <h2 className="mt-4 font-display text-5xl leading-[1.05] text-burgundy">Honest by construction.</h2>
+            <h2 className="mt-4 font-display text-3xl leading-tight text-ink">Know where the numbers come from.</h2>
           </Reveal>
           <div className="grid gap-x-10 gap-y-8 sm:grid-cols-2 lg:col-span-8">
             {items.map(([icon, title, body], k) => (
@@ -282,15 +285,15 @@ function FinalCta() {
       <div className="graticule graticule-dark pointer-events-none absolute inset-0" aria-hidden="true" />
       <div className="relative mx-auto flex max-w-[1200px] flex-col items-start gap-8 px-4 py-24 md:flex-row md:items-end md:justify-between md:px-10">
         <Reveal>
-          <h2 className="max-w-2xl font-display text-5xl leading-[1.05] text-peach md:text-6xl">
-            Plan your next chapter. <em className="text-salmon">Start with your family.</em>
+          <h2 className="max-w-2xl font-display text-3xl leading-tight text-white md:text-4xl">
+            Start with a postal code. Find what’s nearby.
           </h2>
         </Reveal>
         <Reveal delay={120} className="flex flex-wrap gap-3">
-          <Link to="/explore" className="btn bg-peach px-6 py-3 text-base text-burgundy hover:bg-salmon">
+          <Link to="/explore" className="btn bg-white px-6 py-3 text-base text-burgundy hover:bg-blush">
             Explore now
           </Link>
-          <Link to="/register" className="btn border border-peach/60 px-6 py-3 text-base text-peach hover:bg-white/10">
+          <Link to="/register" className="btn border border-white/60 px-6 py-3 text-base text-white hover:bg-white/10">
             Create account
           </Link>
         </Reveal>
@@ -325,7 +328,7 @@ function SiteFooter() {
         </div>
       </div>
       <div className="border-t border-line-soft py-4 text-center font-mono text-[10px] tracking-widest text-muted uppercase">
-        © 2026 Banana Five-O · NTU SC2006 · proximity is not a promise
+        © 2026 Banana Five-O · NTU SC2006 student project · Not a government service
       </div>
     </footer>
   );

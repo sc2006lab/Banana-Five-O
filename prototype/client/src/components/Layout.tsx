@@ -94,7 +94,7 @@ export function Header() {
   const { compareIds, me } = useApp();
   const nav = useNavigate();
   return (
-    <header className="sticky top-0 z-[1100] border-b border-line-soft bg-surface/95 backdrop-blur">
+    <header className="sticky top-0 z-[1100] border-t-4 border-t-cinnabar border-b border-line-soft bg-white">
       <div className="mx-auto flex h-16 max-w-[1440px] items-center gap-4 px-4 md:px-8">
         <Link to="/" className="flex items-center gap-2 text-2xl font-bold tracking-tight text-burgundy" aria-label="FamPlan home">
           <img src="/favicon.svg" alt="" className="h-7 w-7" />

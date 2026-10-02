@@ -16,7 +16,7 @@ const SHORT: Record<Criterion, string> = {
 export function Rosette({
   values,
   size = 96,
-  tone = '#dd9893',
+  tone = '#c51a27',
   highlight = false,
   labels = false,
   animate = true,

@@ -66,11 +66,11 @@ function ResultCard({ r, radius, destinationLabel, index = 0 }: { r: Neighbourho
   const comparing = compareIds.includes(r.id);
   return (
     <article
-      className="card overflow-hidden transition-all duration-300 hover:-translate-y-0.5 hover:shadow-float"
+      className="card overflow-hidden transition-shadow duration-150 hover:shadow-float"
       style={{ ['--i' as string]: index % 12 }}
       aria-labelledby={`r-${r.id}`}
     >
-      <div className="flex items-start justify-between gap-3 bg-blush/70 px-5 pt-4 pb-3">
+      <div className="flex items-start justify-between gap-3 border-b border-line-soft bg-white px-5 pt-4 pb-3">
         <div className="min-w-0">
           <p className="eyebrow">Neighbourhood profile</p>
           <h3 id={`r-${r.id}`} className="mt-0.5 truncate text-xl font-semibold text-burgundy">
@@ -213,7 +213,7 @@ export function ExplorePage() {
   const activeCount = f.areas.length + f.stages.length + (f.category ? 1 : 0) + (f.maxCommute ? 1 : 0);
 
   return (
-    <div className="flex h-[calc(100dvh-64px)] flex-col md:flex-row">
+    <div className="flex h-[calc(100dvh-128px)] flex-col md:h-[calc(100dvh-69px)] md:flex-row">
       {/* Map */}
       <section className={`relative flex-1 ${view === 'map' ? 'block' : 'hidden'} md:block`} aria-label="Map of results">
         <MapContainer center={SG_CENTER} zoom={12} maxBounds={SG_BOUNDS} className="h-full w-full" scrollWheelZoom>
@@ -223,7 +223,7 @@ export function ExplorePage() {
             <Marker
               key={r.id}
               position={[r.lat, r.lng]}
-              icon={pinIcon(String(r.score.total), r.score.total >= 75 ? '#461220' : r.score.total >= 55 ? '#b23a48' : '#8a4b00')}
+              icon={pinIcon(String(r.score.total), r.score.total >= 75 ? '#a81724' : r.score.total >= 55 ? '#c51a27' : '#8a4b00')}
               title={`${r.name}, score ${r.score.total}`}
               alt={`${r.name}, family suitability score ${r.score.total}`}
               eventHandlers={{ click: () => nav(`/n/${r.id}`), keypress: (e) => (e.originalEvent as KeyboardEvent).key === 'Enter' && nav(`/n/${r.id}`) }}
@@ -234,7 +234,7 @@ export function ExplorePage() {
             </Marker>
           ))}
           {data?.addressMatch && (
-            <Marker position={[data.addressMatch.lat, data.addressMatch.lng]} icon={pinIcon('You searched here', '#2a000c')} alt={data.addressMatch.address} />
+            <Marker position={[data.addressMatch.lat, data.addressMatch.lng]} icon={pinIcon('You searched here', '#202124')} alt={data.addressMatch.address} />
           )}
         </MapContainer>
         <button className="btn-dark absolute top-4 right-4 z-[1000] md:hidden" onClick={() => setView('list')}>
