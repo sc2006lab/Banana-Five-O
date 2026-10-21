@@ -15,7 +15,15 @@ export default defineConfig({
     },
     coverage: {
       provider: 'v8',
-      include: ['src/scoring/**', 'src/lib/geo.ts', 'src/neighbourhoods/dedupe.ts', 'src/synchronisation/validate.ts', 'src/synchronisation/datagovsg.ts'],
+      // NFR-MAINT-02: family scoring, proximity aggregation, facility deduplication, external-data transformation.
+      include: [
+        'src/scoring/**',
+        'src/neighbourhoods/service.ts',
+        'src/neighbourhoods/dedupe.ts',
+        'src/synchronisation/sources.ts',
+        'src/synchronisation/validate.ts',
+      ],
+      thresholds: { branches: 80, perFile: true },
       reporter: ['text', 'html'],
     },
   },

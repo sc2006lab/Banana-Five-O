@@ -1,5 +1,13 @@
 // Family Suitability Score (FR-DEC-01 – FR-DEC-03, NFR-TRANS-01). Pure and deterministic.
-import { CRITERIA, type Criterion, type CriterionBreakdown, type CriterionWeights, type FamilyScoreDto } from '@famplan/shared';
+import {
+  CRITERIA,
+  WEIGHT_MAX,
+  WEIGHT_MIN,
+  type Criterion,
+  type CriterionBreakdown,
+  type CriterionWeights,
+  type FamilyScoreDto,
+} from '@famplan/shared';
 import { SCORING_CONFIG, type NormalisationRule, type ScoringConfiguration } from './config.js';
 
 export interface CriterionEvidence {
@@ -10,6 +18,31 @@ export interface CriterionEvidence {
 }
 
 export type ScoringEvidence = Record<Criterion, CriterionEvidence>;
+
+/** Thrown when evidence or weights fall outside the documented input domain (FR-PREF-05, SRS §6). */
+export class ScoringInputError extends Error {}
+
+/**
+ * Guards calculateScore() so an invalid weight or measurement can never produce a plausible-looking score.
+ * Weights must be integers from WEIGHT_MIN to WEIGHT_MAX for every criterion; evidence values must be
+ * null (missing) or finite and non-negative, and whole numbers for 'count' rules (facilities are counted).
+ * Every problem is collected and reported in a single error, each naming its criterion.
+ */
+export function assertValidScoringInput(evidence: ScoringEvidence, weights: CriterionWeights): void {
+  const problems: string[] = [];
+  for (const c of CRITERIA) {
+    const w = weights[c];
+    if (!Number.isInteger(w) || w < WEIGHT_MIN || w > WEIGHT_MAX)
+      problems.push(`${c}: weight must be a whole number from ${WEIGHT_MIN} to ${WEIGHT_MAX} (got ${w})`);
+
+    const v = evidence[c].value;
+    if (v === null) continue;
+    if (!Number.isFinite(v) || v < 0) problems.push(`${c}: value must be a finite number ≥ 0 (got ${v})`);
+    else if (SCORING_CONFIG.criteria[c].kind === 'count' && !Number.isInteger(v))
+      problems.push(`${c}: facility count must be a whole number (got ${v})`);
+  }
+  if (problems.length > 0) throw new ScoringInputError(problems.join('; '));
+}
 
 /** Round to nearest whole number with exact .5 rounding upward (FR-DEC-02). Tolerates float noise. */
 export function roundHalfUp(x: number): number {
@@ -39,6 +72,7 @@ export function calculateScore(
   config: ScoringConfiguration = SCORING_CONFIG,
   now: Date = new Date(),
 ): FamilyScoreDto {
+  assertValidScoringInput(evidence, weights);
   const available = CRITERIA.filter((c) => evidence[c].value !== null);
   let weightSum = available.reduce((s, c) => s + weights[c], 0);
   let effective: Record<Criterion, number> = Object.fromEntries(CRITERIA.map((c) => [c, weights[c]])) as Record<Criterion, number>;
