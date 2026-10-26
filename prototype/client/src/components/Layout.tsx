@@ -2,6 +2,34 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useApp } from '../state/AppState';
 import { Icon } from './ui';
+import { explorePath, malformedPostalQuery, signInPath } from '../lib/navigation';
+
+function HeaderSearch() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { toast } = useApp();
+  const [query, setQuery] = useState(() => new URLSearchParams(location.search).get('q') ?? '');
+  useEffect(() => {
+    setQuery(new URLSearchParams(location.search).get('q') ?? '');
+  }, [location.search]);
+  return (
+    <form role="search" aria-label="Quick location search" className="relative ml-3 hidden w-64 shrink xl:block" onSubmit={(event) => {
+      event.preventDefault();
+      if (malformedPostalQuery(query)) {
+        toast('Enter all six digits of the Singapore postal code, including any leading zero.');
+        return;
+      }
+      navigate(explorePath(query));
+    }}>
+      <label htmlFor="header-location" className="sr-only">Search locations or postal codes</label>
+      <Icon name="search" className="pointer-events-none absolute top-2.5 left-3 !text-[18px] text-muted" />
+      <input id="header-location" className="input !rounded-xl !bg-white/80 !pr-10 !pl-9" placeholder="Postal code, address or town" value={query} onChange={(event) => setQuery(event.target.value)} />
+      <button className="absolute top-1.5 right-2 rounded p-1 text-burgundy hover:bg-blush" aria-label="Search this location">
+        <Icon name="arrow_forward" className="!text-[18px]" />
+      </button>
+    </form>
+  );
+}
 
 function NavItem({ to, children }: { to: string; children: string }) {
   return (
@@ -21,6 +49,7 @@ function UserMenu() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const nav = useNavigate();
+  const location = useLocation();
   useEffect(() => {
     const close = (e: MouseEvent) => ref.current && !ref.current.contains(e.target as Node) && setOpen(false);
     document.addEventListener('click', close);
@@ -28,7 +57,7 @@ function UserMenu() {
   }, []);
   if (!me)
     return (
-      <Link to="/signin" className="btn-dark">
+      <Link to={signInPath(location.pathname + location.search)} className="btn-dark !rounded-xl">
         Sign In
       </Link>
     );
@@ -94,12 +123,13 @@ export function Header() {
   const { compareIds, me } = useApp();
   const nav = useNavigate();
   return (
-    <header className="sticky top-0 z-[1100] border-t-4 border-t-cinnabar border-b border-line-soft bg-white">
+    <header className="sticky top-0 z-[1100] border-b border-line bg-surface">
       <div className="mx-auto flex h-16 max-w-[1440px] items-center gap-4 px-4 md:px-8">
         <Link to="/" className="flex items-center gap-2 text-2xl font-bold tracking-tight text-burgundy" aria-label="FamPlan home">
           <img src="/favicon.svg" alt="" className="h-7 w-7" />
           FamPlan
         </Link>
+        <HeaderSearch />
         <nav className="ml-4 hidden items-center gap-6 md:flex" aria-label="Primary">
           <NavItem to="/explore">Explore</NavItem>
           <NavItem to="/shortlist">Shortlist</NavItem>

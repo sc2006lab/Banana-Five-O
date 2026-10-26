@@ -21,6 +21,7 @@ import { ScoreBreakdown } from '../components/ScoreBreakdown';
 import { Icon, Limitation, Notice, ScorePill, Spinner, StateBadge } from '../components/ui';
 import { Rosette } from '../components/Rosette';
 import { toneFor } from '../components/SurveyMap';
+import { backOrExplore } from '../lib/navigation';
 
 type Item = NeighbourhoodSummary & { detail: NeighbourhoodDetail };
 
@@ -140,7 +141,7 @@ export function ComparePage() {
 
   return (
     <div className="mx-auto max-w-[1400px] px-4 py-6 md:px-8">
-      <button onClick={() => nav(-1)} className="flex items-center gap-2 text-sm font-semibold text-muted hover:text-burgundy">
+      <button onClick={() => backOrExplore(nav)} className="flex items-center gap-2 text-sm font-semibold text-muted hover:text-burgundy">
         <Icon name="arrow_back" className="!text-[18px]" />
         Back
       </button>

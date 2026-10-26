@@ -21,6 +21,7 @@ import { ScoreBreakdown } from '../components/ScoreBreakdown';
 import { Icon, Limitation, Notice, ProvenanceLine, Spinner, StateBadge, scoreTone } from '../components/ui';
 import { Rosette } from '../components/Rosette';
 import { toneFor } from '../components/SurveyMap';
+import { backOrExplore } from '../lib/navigation';
 import { useTweened } from '../lib/motion';
 
 const DEFAULT_LAYERS: AmenityCategory[] = ['childcare', 'kindergarten', 'primary_school', 'secondary_school', 'supermarket', 'clinic', 'park_playground', 'mrt'];
@@ -128,7 +129,7 @@ export function ProfilePage() {
   const comparing = compareIds.includes(detail.id);
 
   return (
-    <div className="flex flex-col md:h-[calc(100dvh-64px)] md:flex-row">
+    <div className="flex flex-col md:h-[calc(100dvh-65px)] md:flex-row">
       <section className="relative h-[45vh] md:h-auto md:flex-1" aria-label={`Map of ${detail.name} and nearby facilities`}>
         <MapContainer center={[detail.lat, detail.lng]} zoom={15} maxBounds={SG_BOUNDS} className="h-full w-full">
           <OneMapTiles />
@@ -189,9 +190,9 @@ export function ProfilePage() {
 
       <section className="flex w-full flex-col border-l border-line-soft bg-surface md:w-[520px] lg:w-[560px] min-h-0" aria-labelledby="nh-title">
         <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-4 pb-6 md:px-6">
-          <button onClick={() => nav(-1)} className="flex items-center gap-2 text-sm font-semibold text-muted hover:text-burgundy">
+          <button onClick={() => backOrExplore(nav)} className="flex items-center gap-2 text-sm font-semibold text-muted hover:text-burgundy">
             <Icon name="arrow_back" className="!text-[18px]" />
-            Back to search
+            Back
           </button>
           <div className="mt-3 flex items-start justify-between gap-4">
             <div>
@@ -281,15 +282,15 @@ export function ProfilePage() {
         </div>
 
         <div className="grid grid-cols-3 gap-2 border-t border-line-soft bg-white p-3 md:px-6">
-          <button className="btn-secondary" aria-pressed={saved} onClick={() => toggleShortlist(detail.id, detail.name)}>
+          <button className="btn-secondary min-w-0 !px-2 !text-xs sm:!text-sm" aria-pressed={saved} onClick={() => toggleShortlist(detail.id, detail.name)}>
             <Icon name="favorite" filled={saved} className="!text-[18px]" />
             {saved ? 'Saved' : 'Shortlist'}
           </button>
-          <button className="btn-secondary" aria-pressed={comparing} onClick={() => toggleCompare(detail.id)}>
+          <button className="btn-secondary min-w-0 !px-2 !text-xs sm:!text-sm" aria-pressed={comparing} onClick={() => toggleCompare(detail.id)}>
             <Icon name={comparing ? 'check_box' : 'compare_arrows'} className="!text-[18px]" />
             {comparing ? 'Comparing' : 'Compare'}
           </button>
-          <Link to={`/n/${detail.id}/commute`} className="btn-dark">
+          <Link to={`/n/${detail.id}/commute`} className="btn-dark min-w-0 !px-2 !text-xs sm:!text-sm">
             <Icon name="commute" className="!text-[18px]" />
             Commute
           </Link>

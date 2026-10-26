@@ -23,7 +23,7 @@ export interface Showcase {
   stats: { subzones: number; neighbourhoods: number; facilities: number; earlyCare: number; datasets: number };
 }
 
-export const LADDER = ['#f6eeee', '#f4c9ce', '#ec9da6', '#df6775', '#c51a27', '#a81724'];
+export const LADDER = ['#f3e5df', '#fed0bb', '#fcb9b2', '#d97d80', '#b23a48', '#461220'];
 const STEPS = [0, 55, 65, 75, 85, 93];
 export const toneFor = (score: number) => LADDER[STEPS.reduce((acc, t, i) => (score >= t ? i : acc), 0)];
 

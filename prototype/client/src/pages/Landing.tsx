@@ -4,7 +4,8 @@ import { Link } from 'react-router-dom';
 import { CRITERIA, CRITERION_ICONS, CRITERION_LABELS } from '@famplan/shared';
 import { api } from '../lib/api';
 import { CountUp, Reveal, useTweened } from '../lib/motion';
-import { LADDER, SurveyMap, type Showcase, type ShowcaseZone } from '../components/SurveyMap';
+import { LADDER, SurveyMap, toneFor, type Showcase, type ShowcaseZone } from '../components/SurveyMap';
+import { Rosette } from '../components/Rosette';
 import { Icon } from '../components/ui';
 
 const SOURCES = [
@@ -37,7 +38,7 @@ function Eyebrow({ children, className = '' }: { children: string; className?: s
 
 function Hero({ data, error }: { data: Showcase | null; error: string | null }) {
   return (
-    <section className="relative overflow-hidden border-b border-line-soft bg-white">
+    <section className="relative overflow-hidden border-b border-line-soft bg-paper">
       <div className="graticule pointer-events-none absolute inset-0" aria-hidden="true" />
       <div className="relative mx-auto grid max-w-[1440px] items-center gap-10 px-4 pt-14 pb-16 md:px-10 lg:grid-cols-12 lg:pt-20 lg:pb-24">
         <div className="lg:col-span-5">
@@ -45,7 +46,7 @@ function Hero({ data, error }: { data: Showcase | null; error: string | null }) 
             <Eyebrow>Family neighbourhood planning · Singapore</Eyebrow>
           </Reveal>
           <Reveal delay={80}>
-            <h1 className="mt-5 font-display text-4xl leading-tight tracking-tight text-ink sm:text-5xl">
+            <h1 className="mt-5 font-display text-[44px] leading-[1.04] font-normal tracking-tight text-burgundy sm:text-6xl xl:text-7xl">
               Find a family-friendly neighbourhood in Singapore.
             </h1>
           </Reveal>
@@ -136,21 +137,9 @@ function EightMeasures({ data }: { data: Showcase | null }) {
         <Reveal className="order-2 flex flex-col items-center lg:order-1">
           <div className="relative">
             {z ? (
-              <dl className="card w-full min-w-[280px] space-y-4 p-6">
-                {CRITERIA.map((criterion, k) => (
-                  <div key={criterion}>
-                    <div className="flex items-baseline justify-between gap-6 text-sm">
-                      <dt>{CRITERION_LABELS[criterion]}</dt>
-                      <dd className="font-semibold">{z.petals![k] === null ? 'No data' : `${Math.round(z.petals![k]! * 100)}%`}</dd>
-                    </div>
-                    <div className="mt-1 h-1.5 rounded bg-paper" aria-hidden="true">
-                      <div className="h-full rounded bg-cinnabar" style={{width:`${(z.petals![k] ?? 0) * 100}%`}} />
-                    </div>
-                  </div>
-                ))}
-              </dl>
+              <Rosette values={z.petals!} size={420} labels tone={toneFor(z.score ?? 0)} className="max-w-full" />
             ) : (
-              <div className="skeleton h-80 w-72 max-w-full rounded-md" />
+              <div className="skeleton h-80 w-72 max-w-full rounded-full" />
             )}
           </div>
           {z && (
@@ -176,7 +165,7 @@ function EightMeasures({ data }: { data: Showcase | null }) {
         <div className="order-1 lg:order-2">
           <Reveal>
             <Eyebrow>Your family priorities</Eyebrow>
-            <h2 className="mt-4 font-display text-3xl leading-tight text-ink">
+            <h2 className="mt-4 font-display text-4xl leading-tight text-burgundy sm:text-5xl">
               Compare the things your family needs nearby.
             </h2>
             <p className="mt-5 max-w-md text-muted">
@@ -228,7 +217,7 @@ function HowItWorks() {
       <div className="mx-auto max-w-[1200px] px-4 py-24 md:px-10">
         <Reveal className="max-w-2xl">
           <Eyebrow>Method</Eyebrow>
-          <h2 className="mt-4 font-display text-3xl leading-tight text-ink">How to use FamPlan</h2>
+          <h2 className="mt-4 font-display text-4xl leading-tight text-burgundy sm:text-5xl">How to use FamPlan</h2>
         </Reveal>
         <ol className="mt-14 grid gap-6 md:grid-cols-3">
           {steps.map((s, k) => (
@@ -262,7 +251,7 @@ function Honesty() {
         <div className="grid gap-12 lg:grid-cols-12">
           <Reveal className="lg:col-span-4">
             <Eyebrow>Principles</Eyebrow>
-            <h2 className="mt-4 font-display text-3xl leading-tight text-ink">Know where the numbers come from.</h2>
+            <h2 className="mt-4 font-display text-4xl leading-tight text-burgundy sm:text-5xl">Know where the numbers come from.</h2>
           </Reveal>
           <div className="grid gap-x-10 gap-y-8 sm:grid-cols-2 lg:col-span-8">
             {items.map(([icon, title, body], k) => (
@@ -285,7 +274,7 @@ function FinalCta() {
       <div className="graticule graticule-dark pointer-events-none absolute inset-0" aria-hidden="true" />
       <div className="relative mx-auto flex max-w-[1200px] flex-col items-start gap-8 px-4 py-24 md:flex-row md:items-end md:justify-between md:px-10">
         <Reveal>
-          <h2 className="max-w-2xl font-display text-3xl leading-tight text-white md:text-4xl">
+          <h2 className="max-w-2xl font-display text-4xl leading-tight text-peach md:text-5xl">
             Start with a postal code. Find what’s nearby.
           </h2>
         </Reveal>

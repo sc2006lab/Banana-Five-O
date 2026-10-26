@@ -1,6 +1,6 @@
 // UC-3.1 Search Neighbourhoods + UC-3.2 Apply Saved Preferences (extend).
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { MapContainer, Marker, Tooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import {
@@ -29,6 +29,7 @@ import { FieldError, Icon, Limitation, Notice, ScorePill, Spinner, scoreTone } f
 import { AmenityHighlight } from '../components/AmenityHighlight';
 import { Rosette } from '../components/Rosette';
 import { toneFor } from '../components/SurveyMap';
+import { malformedPostalQuery, signInPath } from '../lib/navigation';
 
 interface Filters {
   q: string;
@@ -70,7 +71,7 @@ function ResultCard({ r, radius, destinationLabel, index = 0 }: { r: Neighbourho
       style={{ ['--i' as string]: index % 12 }}
       aria-labelledby={`r-${r.id}`}
     >
-      <div className="flex items-start justify-between gap-3 border-b border-line-soft bg-white px-5 pt-4 pb-3">
+      <div className="flex items-start justify-between gap-3 border-b border-line-soft bg-blush/45 px-5 pt-4 pb-3">
         <div className="min-w-0">
           <p className="eyebrow">Neighbourhood profile</p>
           <h3 id={`r-${r.id}`} className="mt-0.5 truncate text-xl font-semibold text-burgundy">
@@ -141,8 +142,10 @@ function ResultCard({ r, radius, destinationLabel, index = 0 }: { r: Neighbourho
 export function ExplorePage() {
   const { me, prefs, scoring, setScoring, compareIds, toast } = useApp();
   const nav = useNavigate();
-  const [f, setF] = useState<Filters>(remembered);
-  const [draftQ, setDraftQ] = useState(remembered.q);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const query = searchParams.get('q');
+  const [f, setF] = useState<Filters>(() => ({ ...remembered, q: query ?? remembered.q }));
+  const [draftQ, setDraftQ] = useState(query ?? remembered.q);
   const [areas, setAreas] = useState<AreaDto[]>([]);
   const [data, setData] = useState<SearchResponse | null>(null);
   const [results, setResults] = useState<NeighbourhoodSummary[]>([]);
@@ -152,6 +155,13 @@ export function ExplorePage() {
   const [showMore, setShowMore] = useState(false);
   const [view, setView] = useState<'list' | 'map'>('list');
   const listTop = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (query === null) return;
+    setDraftQ(query);
+    setF((current) => current.q === query ? current : { ...current, q: query });
+    setPage(1);
+  }, [query]);
 
   useEffect(() => {
     remembered = f;
@@ -189,13 +199,21 @@ export function ExplorePage() {
         setResults((prev) => (page === 1 ? d.results : [...prev, ...d.results]));
       })
       .catch((e) => {
-        if ((e as Error).name !== 'AbortError') setError(e as ApiError);
+        if ((e as Error).name !== 'AbortError') {
+          setError(e as ApiError);
+          if (page === 1) { setData(null); setResults([]); }
+        }
       })
       .finally(() => setLoading(false));
     return () => ctrl.abort();
   }, [params, page]);
 
   const update = (patch: Partial<Filters>) => {
+    if (patch.q !== undefined) {
+      const next = new URLSearchParams(searchParams);
+      next.set('q', patch.q);
+      setSearchParams(next, { replace: true });
+    }
     setPage(1);
     setF((x) => ({ ...x, ...patch }));
     listTop.current?.scrollIntoView({ block: 'start' });
@@ -213,7 +231,7 @@ export function ExplorePage() {
   const activeCount = f.areas.length + f.stages.length + (f.category ? 1 : 0) + (f.maxCommute ? 1 : 0);
 
   return (
-    <div className="flex h-[calc(100dvh-128px)] flex-col md:h-[calc(100dvh-69px)] md:flex-row">
+    <div className="flex h-[calc(100dvh-126px)] flex-col md:h-[calc(100dvh-65px)] md:flex-row">
       {/* Map */}
       <section className={`relative flex-1 ${view === 'map' ? 'block' : 'hidden'} md:block`} aria-label="Map of results">
         <MapContainer center={SG_CENTER} zoom={12} maxBounds={SG_BOUNDS} className="h-full w-full" scrollWheelZoom>
@@ -223,7 +241,7 @@ export function ExplorePage() {
             <Marker
               key={r.id}
               position={[r.lat, r.lng]}
-              icon={pinIcon(String(r.score.total), r.score.total >= 75 ? '#a81724' : r.score.total >= 55 ? '#c51a27' : '#8a4b00')}
+              icon={pinIcon(String(r.score.total), r.score.total >= 75 ? '#461220' : r.score.total >= 55 ? '#b23a48' : '#8a4b00')}
               title={`${r.name}, score ${r.score.total}`}
               alt={`${r.name}, family suitability score ${r.score.total}`}
               eventHandlers={{ click: () => nav(`/n/${r.id}`), keypress: (e) => (e.originalEvent as KeyboardEvent).key === 'Enter' && nav(`/n/${r.id}`) }}
@@ -265,8 +283,7 @@ export function ExplorePage() {
             onSubmit={(e) => {
               e.preventDefault();
               const candidate = draftQ.trim();
-              if (/^(?:Singapore\s*|S\s*\(?)?\d+\s*\)?$/i.test(candidate)
-                && !/^(?:Singapore\s*|S\s*\(?)?\d{6}\s*\)?$/i.test(candidate)) {
+              if (malformedPostalQuery(candidate)) {
                 toast('Enter all six digits of the Singapore postal code, including any leading zero.');
                 return;
               }
@@ -443,7 +460,7 @@ export function ExplorePage() {
                 Apply my preferences
               </button>
             ) : (
-              <Link to="/signin" className="text-xs font-semibold text-cinnabar hover:underline">
+              <Link to={signInPath(`/explore${searchParams.size ? `?${searchParams}` : ''}`)} className="text-xs font-semibold text-cinnabar hover:underline">
                 Sign in to apply saved family preferences
               </Link>
             )}

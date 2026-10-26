@@ -7,6 +7,6 @@ export default defineConfig({
   server: {
     host: '127.0.0.1',
     port: 5173,
-    proxy: { '/api': 'http://localhost:3001' },
+    proxy: { '/api': { target: process.env.FAMPLAN_DEV_API_TARGET ?? 'http://localhost:3001', changeOrigin: true } },
   },
 });
