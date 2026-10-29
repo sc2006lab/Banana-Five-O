@@ -62,6 +62,49 @@ describe('data.gov.sg download contract', () => {
 describe('OneMap response contract', () => {
   const school = { SEARCHVAL: 'EXAMPLE SCHOOL', ADDRESS: '11 EXAMPLE ROAD', POSTAL: '738907', LATITUDE: '1.4426', LONGITUDE: '103.8000' };
 
+  it('ignores malformed records and deduplicates multiple names at the same address point', async () => {
+    const { config } = await import('../src/config.js');
+    config.onemap = { email: '', password: '', accessToken: '' };
+    fetchMock.mockResolvedValueOnce(json({ results: [null, {}, { ...school, ADDRESS: 123 }, { ...school, LATITUDE: 'not-a-number' }, school, { ...school, SEARCHVAL: 'ALTERNATE NAME' }] }));
+    const { searchAddress } = await import('../src/travel/onemap.js');
+    expect(await searchAddress('Example School', 20)).toEqual([expect.objectContaining({ postal: '738907', lat: 1.4426 })]);
+  });
+
+  it('filters partial postal matches rather than returning a nearby but different address', async () => {
+    const { config } = await import('../src/config.js');
+    config.onemap = { email: '', password: '', accessToken: '' };
+    fetchMock.mockResolvedValueOnce(json({ results: [{ ...school, POSTAL: '138907' }] }));
+    const { searchAddress } = await import('../src/travel/onemap.js');
+    expect(await searchAddress('738907')).toEqual([]);
+  });
+
+  it('refreshes a rejected static token when account credentials are available', async () => {
+    const { config } = await import('../src/config.js');
+    config.onemap = { email: 'fixture@example.com', password: 'fixture-only', accessToken: 'expired-fixture' };
+    fetchMock.mockResolvedValueOnce(json({ error: 'Token expired' }, 401))
+      .mockResolvedValueOnce(json({ access_token: 'renewed-fixture', expiry_timestamp: String(Date.now() / 1000 + 3600) }))
+      .mockResolvedValueOnce(json({ results: [school] }));
+    const { searchAddress } = await import('../src/travel/onemap.js');
+    const result = searchAddress('738907');
+    await vi.runAllTimersAsync();
+    expect(await result).toHaveLength(1);
+    expect(fetchMock.mock.calls[0][1]?.headers).toMatchObject({ Authorization: 'expired-fixture' });
+    expect(fetchMock.mock.calls[2][1]?.headers).toMatchObject({ Authorization: 'renewed-fixture' });
+  });
+
+  it('does not cache a provider outage as an unrecognised postal code', async () => {
+    const { config } = await import('../src/config.js');
+    config.onemap = { email: '', password: '', accessToken: '' };
+    const { prisma } = await import('../src/db.js');
+    vi.spyOn(prisma.geocodeCache, 'findUnique').mockResolvedValue(null);
+    const upsert = vi.spyOn(prisma.geocodeCache, 'upsert');
+    fetchMock.mockRejectedValue(new Error('Network unavailable'));
+    const { searchLocation } = await import('../src/travel/onemap.js');
+    const assertion = expect(searchLocation('012345')).rejects.toThrow('unavailable');
+    await vi.runAllTimersAsync(); await assertion;
+    expect(upsert).not.toHaveBeenCalled();
+  });
+
   it('accepts a valid public search response and returns provider coordinates', async () => {
     const { config } = await import('../src/config.js');
     config.onemap = { email: '', password: '', accessToken: '' };

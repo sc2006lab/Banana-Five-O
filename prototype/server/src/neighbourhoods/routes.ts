@@ -98,13 +98,15 @@ const facilitiesQuery = z.object({
 neighbourhoodRouter.get('/neighbourhoods/:id/facilities', (req, res) => {
   const n = getNeighbourhood(String(req.params.id));
   const q = parse(facilitiesQuery, req.query);
-  res.json(facilitiesNear(n, q.radius as ProximityRadius, q.category));
+  const ctx = scoringContext(parse(scoringParamsSchema, req.query));
+  res.json(facilitiesNear(ctx.origin ? index.atPoint(n, ctx.origin) : n, q.radius as ProximityRadius, q.category));
 });
 
 neighbourhoodRouter.get('/neighbourhoods/:id/route', async (req, res) => {
   const n = getNeighbourhood(String(req.params.id));
   const q = parse(routeQuerySchema, req.query);
-  res.json(await routeEstimate({ lat: n.lat, lng: n.lng }, { lat: q.destLat, lng: q.destLng }, q.mode, q.barrierFree));
+  const origin = scoringContext(q).origin ?? n;
+  res.json(await routeEstimate({ lat: origin.lat, lng: origin.lng }, { lat: q.destLat, lng: q.destLng }, q.mode, q.barrierFree));
 });
 
 neighbourhoodRouter.get('/compare', (req, res) => {

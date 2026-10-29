@@ -1,7 +1,7 @@
 // UC-3.1 Search Neighbourhoods + UC-3.2 Apply Saved Preferences (extend).
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { MapContainer, Marker, Tooltip, useMap } from 'react-leaflet';
+import { Circle, MapContainer, Marker, Tooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import {
   AMENITY_CATEGORIES,
@@ -19,6 +19,7 @@ import {
   type ProximityRadius,
   type SearchResponse,
   type SortOption,
+  type LocationOrigin,
 } from '@famplan/shared';
 import { api, ApiError, fmtDistance, scoringParams } from '../lib/api';
 import { useApp } from '../state/AppState';
@@ -29,7 +30,7 @@ import { FieldError, Icon, Limitation, Notice, ScorePill, Spinner, scoreTone } f
 import { AmenityHighlight } from '../components/AmenityHighlight';
 import { Rosette } from '../components/Rosette';
 import { toneFor } from '../components/SurveyMap';
-import { malformedPostalQuery, signInPath } from '../lib/navigation';
+import { malformedPostalQuery, originFromParams, originParams, profilePath, signInPath } from '../lib/navigation';
 
 interface Filters {
   q: string;
@@ -41,6 +42,7 @@ interface Filters {
   maxNearest: string;
   maxCommute: string;
   sort: SortOption;
+  origin?: LocationOrigin;
 }
 
 const EMPTY: Filters = { q: '', areas: [], stages: [], radius: 1000, category: '', minCount: '', maxNearest: '', maxCommute: '', sort: 'score' };
@@ -48,15 +50,15 @@ let remembered: Filters = EMPTY; // survives navigation to a profile and back
 
 const radiusLabel = (r: number) => (r >= 1000 ? `${r / 1000} km` : `${r} m`);
 
-function FitToResults({ results, focus, view }: { results: NeighbourhoodSummary[]; focus: { lat: number; lng: number } | null; view: string }) {
+function FitToResults({ results, focus, view, radius }: { results: NeighbourhoodSummary[]; focus: { lat: number; lng: number } | null; view: string; radius: number }) {
   const map = useMap();
   const key = results.map((r) => r.id).join(',');
   useEffect(() => {
     map.invalidateSize();
-    if (focus) map.setView([focus.lat, focus.lng], 14);
+    if (focus) map.fitBounds(L.latLng(focus.lat, focus.lng).toBounds(radius * 2.3), { padding: [40, 40] });
     else if (results.length) map.fitBounds(L.latLngBounds(results.map((r) => [r.lat, r.lng])), { padding: [40, 40], maxZoom: 14 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, focus?.lat, focus?.lng, view]);
+  }, [map, key, focus?.lat, focus?.lng, view, radius]);
   return null;
 }
 
@@ -75,7 +77,7 @@ function ResultCard({ r, radius, destinationLabel, index = 0 }: { r: Neighbourho
         <div className="min-w-0">
           <p className="eyebrow">Neighbourhood profile</p>
           <h3 id={`r-${r.id}`} className="mt-0.5 truncate text-xl font-semibold text-burgundy">
-            <Link to={`/n/${r.id}`} className="hover:underline">
+            <Link to={profilePath(r.id, r.origin, radius)} className="hover:underline">
               {r.name}
             </Link>
           </h3>
@@ -94,8 +96,8 @@ function ResultCard({ r, radius, destinationLabel, index = 0 }: { r: Neighbourho
             <AmenityHighlight key={item.category} item={item} />
           ))}
         </div>
-        <p className="mt-2 text-xs text-muted">Within {radiusLabel(radius)} of the neighbourhood reference point.
-          {' '}<Link to={`/n/${r.id}`} className="underline">Sources, freshness and score explanation</Link>
+        <p className="mt-2 text-xs text-muted">Within {radiusLabel(radius)} of {r.origin ? r.origin.address : 'the neighbourhood reference point'}.
+          {' '}<Link to={profilePath(r.id, r.origin, radius)} className="underline">Sources, freshness and score explanation</Link>
         </p>
         <div className="mt-3 flex items-end justify-between border-t border-line-soft pt-3">
           <div>
@@ -144,7 +146,8 @@ export function ExplorePage() {
   const nav = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const query = searchParams.get('q');
-  const [f, setF] = useState<Filters>(() => ({ ...remembered, q: query ?? remembered.q }));
+  const originKey = ['originLat', 'originLng', 'originAddress', 'originPostal'].map((k) => searchParams.get(k) ?? '').join('|');
+  const [f, setF] = useState<Filters>(() => ({ ...remembered, q: query ?? remembered.q, origin: query === null ? remembered.origin : originFromParams(searchParams) }));
   const [draftQ, setDraftQ] = useState(query ?? remembered.q);
   const [areas, setAreas] = useState<AreaDto[]>([]);
   const [data, setData] = useState<SearchResponse | null>(null);
@@ -159,9 +162,10 @@ export function ExplorePage() {
   useEffect(() => {
     if (query === null) return;
     setDraftQ(query);
-    setF((current) => current.q === query ? current : { ...current, q: query });
+    const origin = originFromParams(searchParams);
+    setF((current) => current.q === query && JSON.stringify(current.origin) === JSON.stringify(origin) ? current : { ...current, q: query, origin });
     setPage(1);
-  }, [query]);
+  }, [query, originKey]);
 
   useEffect(() => {
     remembered = f;
@@ -183,6 +187,7 @@ export function ExplorePage() {
         maxCommute: f.maxCommute,
         sort: f.sort,
         pageSize: 12,
+        ...originParams(f.origin),
       }),
     [f, scoring],
   );
@@ -191,20 +196,22 @@ export function ExplorePage() {
     const ctrl = new AbortController();
     setLoading(true);
     setError(null);
+    if (page === 1) { setData(null); setResults([]); }
     const p = new URLSearchParams(params);
     p.set('page', String(page));
     api<SearchResponse>(`/neighbourhoods?${p}`, { signal: ctrl.signal })
       .then((d) => {
+        if (ctrl.signal.aborted) return;
         setData(d);
         setResults((prev) => (page === 1 ? d.results : [...prev, ...d.results]));
       })
       .catch((e) => {
-        if ((e as Error).name !== 'AbortError') {
+        if (!ctrl.signal.aborted && (e as Error).name !== 'AbortError') {
           setError(e as ApiError);
           if (page === 1) { setData(null); setResults([]); }
         }
       })
-      .finally(() => setLoading(false));
+      .finally(() => { if (!ctrl.signal.aborted) setLoading(false); });
     return () => ctrl.abort();
   }, [params, page]);
 
@@ -212,6 +219,9 @@ export function ExplorePage() {
     if (patch.q !== undefined) {
       const next = new URLSearchParams(searchParams);
       next.set('q', patch.q);
+      for (const k of ['originLat', 'originLng', 'originAddress', 'originPostal']) next.delete(k);
+      for (const [k, v] of Object.entries(originParams(patch.origin))) next.set(k, String(v));
+      if (!Object.hasOwn(patch, 'origin')) patch = { ...patch, origin: undefined };
       setSearchParams(next, { replace: true });
     }
     setPage(1);
@@ -236,7 +246,7 @@ export function ExplorePage() {
       <section className={`relative flex-1 ${view === 'map' ? 'block' : 'hidden'} md:block`} aria-label="Map of results">
         <MapContainer center={SG_CENTER} zoom={12} maxBounds={SG_BOUNDS} className="h-full w-full" scrollWheelZoom>
           <OneMapTiles />
-          <FitToResults results={results} focus={data?.addressMatch ?? null} view={view} />
+          <FitToResults results={results} focus={data?.addressMatch ?? null} view={view} radius={f.radius} />
           {results.map((r) => (
             <Marker
               key={r.id}
@@ -244,7 +254,7 @@ export function ExplorePage() {
               icon={pinIcon(String(r.score.total), r.score.total >= 75 ? '#461220' : r.score.total >= 55 ? '#b23a48' : '#8a4b00')}
               title={`${r.name}, score ${r.score.total}`}
               alt={`${r.name}, family suitability score ${r.score.total}`}
-              eventHandlers={{ click: () => nav(`/n/${r.id}`), keypress: (e) => (e.originalEvent as KeyboardEvent).key === 'Enter' && nav(`/n/${r.id}`) }}
+              eventHandlers={{ click: () => nav(profilePath(r.id, r.origin, f.radius)), keypress: (e) => (e.originalEvent as KeyboardEvent).key === 'Enter' && nav(profilePath(r.id, r.origin, f.radius)) }}
             >
               <Tooltip direction="top" offset={[0, -28]}>
                 {r.name} · {r.planningArea}
@@ -252,7 +262,7 @@ export function ExplorePage() {
             </Marker>
           ))}
           {data?.addressMatch && (
-            <Marker position={[data.addressMatch.lat, data.addressMatch.lng]} icon={pinIcon('You searched here', '#202124')} alt={data.addressMatch.address} />
+            <Circle center={[data.addressMatch.lat, data.addressMatch.lng]} radius={f.radius} pathOptions={{ color: '#b23a48', weight: 1.5, fillOpacity: 0.04 }} />
           )}
         </MapContainer>
         <button className="btn-dark absolute top-4 right-4 z-[1000] md:hidden" onClick={() => setView('list')}>
@@ -491,15 +501,23 @@ export function ExplorePage() {
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 md:px-6">
           <div ref={listTop} />
           {error && <Notice tone="error">{error.message}</Notice>}
-          {data?.matchedBy === 'address' && data.addressMatch && (
+          {data?.matchedBy === 'ambiguous' && data.locationChoices && (
             <Notice className="mb-3">
-              Showing neighbourhoods around <strong>{data.addressMatch.address}</strong>
-              {data.addressMatch.neighbourhoodId && results[0]?.id === data.addressMatch.neighbourhoodId
-                ? ' — the first result contains this address.' : '.'}
-              {' '}Scores and amenity distances describe the neighbourhood reference point, not your individual home.
+              Several places match. Choose the exact address to centre your radius:
+              <ul aria-label="Matching places">
+                {data.locationChoices.map((r) => <li key={`${r.lat},${r.lng},${r.postal}`}><button type="button" className="mt-2 text-left underline" onClick={() => update({ q: f.q, origin: { address: r.address, postal: r.postal, lat: r.lat, lng: r.lng } })}>{r.label} — {r.address}</button></li>)}
+              </ul>
             </Notice>
           )}
-          {data && data.total === 0 && !loading && (
+          {data?.matchedBy === 'address' && data.addressMatch && (
+            <Notice className="mb-3">
+              Showing amenities around <strong>{data.addressMatch.address}</strong>
+              {data.addressMatch.neighbourhoodId && results[0]?.id === data.addressMatch.neighbourhoodId
+                ? ' — the first result contains this address.' : '.'}
+              {' '}The radius, counts and scores use this exact address coordinate.
+            </Notice>
+          )}
+          {data && data.total === 0 && data.matchedBy !== 'ambiguous' && !loading && (
             <div className="card p-6 text-center">
               <Icon name="travel_explore" className="!text-[40px] text-salmon" />
               <p className="mt-2 font-semibold text-burgundy">No neighbourhoods match these filters.</p>

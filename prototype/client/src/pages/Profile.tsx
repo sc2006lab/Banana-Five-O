@@ -1,6 +1,6 @@
 // UC-4.1 View Neighbourhood Profile (includes UC-6.1), UC-4.2 Explore Family Amenities, UC-5.1 View Map and Nearby Places.
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Circle, GeoJSON, MapContainer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import {
@@ -21,7 +21,7 @@ import { ScoreBreakdown } from '../components/ScoreBreakdown';
 import { Icon, Limitation, Notice, ProvenanceLine, Spinner, StateBadge, scoreTone } from '../components/ui';
 import { Rosette } from '../components/Rosette';
 import { toneFor } from '../components/SurveyMap';
-import { backOrExplore } from '../lib/navigation';
+import { backOrExplore, originFromParams, originParams, profilePath } from '../lib/navigation';
 import { useTweened } from '../lib/motion';
 
 const DEFAULT_LAYERS: AmenityCategory[] = ['childcare', 'kindergarten', 'primary_school', 'secondary_school', 'supermarket', 'clinic', 'park_playground', 'mrt'];
@@ -99,25 +99,43 @@ function AmenityRow({ a, facilities, radius }: { a: AmenitySummaryDto; facilitie
 export function ProfilePage() {
   const { id = '' } = useParams();
   const nav = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const origin = useMemo(() => originFromParams(searchParams), [searchParams]);
   const { scoring, shortlistIds, toggleShortlist, compareIds, toggleCompare, me } = useApp();
-  const [radius, setRadius] = useState<ProximityRadius>(1000);
+  const [radius, setRadius] = useState<ProximityRadius>(() => {
+    const value = Number(searchParams.get('radius'));
+    return PROXIMITY_RADII.includes(value as ProximityRadius) ? value as ProximityRadius : 1000;
+  });
   const [detail, setDetail] = useState<NeighbourhoodDetail | null>(null);
   const [facilities, setFacilities] = useState<FacilityDto[]>([]);
   const [error, setError] = useState<ApiError | null>(null);
   const [layers, setLayers] = useState<AmenityCategory[]>(DEFAULT_LAYERS);
   const [tab, setTab] = useState<'amenities' | 'score'>('amenities');
 
+  const urlRadius = searchParams.get('radius');
   useEffect(() => {
+    const value = Number(urlRadius);
+    setRadius(PROXIMITY_RADII.includes(value as ProximityRadius) ? value as ProximityRadius : 1000);
+  }, [id, urlRadius]);
+
+  useEffect(() => {
+    const controller = new AbortController();
     setError(null);
-    const p = scoringParams(scoring, { radius });
-    Promise.all([api<NeighbourhoodDetail>(`/neighbourhoods/${id}?${p}`), api<FacilityDto[]>(`/neighbourhoods/${id}/facilities?radius=${radius}`)])
+    setDetail(null);
+    setFacilities([]);
+    const p = scoringParams(scoring, { radius, ...originParams(origin) });
+    const facilityParams = new URLSearchParams({ radius: String(radius) });
+    for (const [k, v] of Object.entries(originParams(origin))) facilityParams.set(k, String(v));
+    Promise.all([api<NeighbourhoodDetail>(`/neighbourhoods/${id}?${p}`, { signal: controller.signal }), api<FacilityDto[]>(`/neighbourhoods/${id}/facilities?${facilityParams}`, { signal: controller.signal })])
       .then(([d, f]) => {
+        if (controller.signal.aborted) return;
         setDetail(d);
         setFacilities(f);
         document.title = `${d.name} — FamPlan`;
       })
-      .catch((e) => setError(e as ApiError));
-  }, [id, radius, scoring]);
+      .catch((e) => { if (!controller.signal.aborted) setError(e as ApiError); });
+    return () => controller.abort();
+  }, [id, radius, scoring, origin]);
 
   const shown = useMemo(() => facilities.filter((f) => layers.includes(f.category)), [facilities, layers]);
   const tweenedScore = useTweened(detail?.score.total ?? 0, 900);
@@ -138,11 +156,11 @@ export function ProfilePage() {
             <GeoJSON key={detail.id} data={detail.boundary} style={{ color: '#461220', weight: 2, dashArray: '6 4', fillColor: '#fcb9b2', fillOpacity: 0.12 }} />
           )}
           <Circle center={[detail.lat, detail.lng]} radius={radius} pathOptions={{ color: '#b23a48', weight: 1.5, fillOpacity: 0.04 }} />
-          <Marker position={[detail.lat, detail.lng]} icon={homeIcon()} title={`${detail.name} reference point`} alt={`${detail.name} reference point`} zIndexOffset={1000}>
+          <Marker position={[detail.lat, detail.lng]} icon={homeIcon()} title={detail.origin?.address ?? `${detail.name} reference point`} alt={detail.origin?.address ?? `${detail.name} reference point`} zIndexOffset={1000}>
             <Popup>
               <strong>{detail.name}</strong>
               <br />
-              Reference point used for all distances.
+              {detail.origin ? `Selected address: ${detail.origin.address}. Used for all distances.` : 'Reference point used for all distances.'}
             </Popup>
           </Marker>
           {shown.map((f) => (
@@ -218,7 +236,7 @@ export function ProfilePage() {
             <span className="text-sm font-semibold text-burgundy">Radius</span>
             <div className="flex overflow-hidden rounded-full border border-line" role="radiogroup" aria-label="Nearby facility radius">
               {PROXIMITY_RADII.map((r) => (
-                <button key={r} role="radio" aria-checked={radius === r} className={`px-3 py-1 text-sm font-semibold ${radius === r ? 'bg-burgundy text-white' : 'bg-white text-burgundy hover:bg-blush'}`} onClick={() => setRadius(r)}>
+                <button key={r} role="radio" aria-checked={radius === r} className={`px-3 py-1 text-sm font-semibold ${radius === r ? 'bg-burgundy text-white' : 'bg-white text-burgundy hover:bg-blush'}`} onClick={() => { const next = new URLSearchParams(searchParams); next.set('radius', String(r)); setRadius(r); setSearchParams(next, { replace: true }); }}>
                   {fmtDistance(r)}
                 </button>
               ))}
@@ -290,7 +308,7 @@ export function ProfilePage() {
             <Icon name={comparing ? 'check_box' : 'compare_arrows'} className="!text-[18px]" />
             {comparing ? 'Comparing' : 'Compare'}
           </button>
-          <Link to={`/n/${detail.id}/commute`} className="btn-dark min-w-0 !px-2 !text-xs sm:!text-sm">
+          <Link to={profilePath(detail.id, detail.origin, radius, '/commute')} className="btn-dark min-w-0 !px-2 !text-xs sm:!text-sm">
             <Icon name="commute" className="!text-[18px]" />
             Commute
           </Link>

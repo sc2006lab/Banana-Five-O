@@ -104,7 +104,9 @@ Deploy from the `prototype` directory, not the repository root. Vercel serves Vi
 
 Required production configuration: `DATABASE_URL` (pooled hosted PostgreSQL), `HTTPS=true`, `APP_ORIGIN` (public domain), `CRON_SECRET`, and OneMap authentication. Configure either `ONEMAP_ACCESS_TOKEN` or `ONEMAP_EMAIL`/`ONEMAP_PASSWORD`. Never use `VITE_` prefixes for secrets.
 
-The currently supplied OneMap token expires **5 October 2026**. Replace it and redeploy before expiry, or remove that token variable and configure account credentials for automatic renewal. The token is not embedded in the browser bundle.
+OneMap access tokens expire (currently after three days). Replace the `ONEMAP_ACCESS_TOKEN` environment variable and redeploy before expiry, or configure `ONEMAP_EMAIL` and `ONEMAP_PASSWORD` for automatic renewal. Search can renew a rejected static token when account credentials are configured. Credentials stay on the server and are not embedded in the browser bundle. See [OneMap authentication](https://www.onemap.gov.sg/apidocs/authentication).
+
+Postal and place-name searches resolve a precise coordinate. If several places match, choose the intended address. The address result uses its containing URA subzone as context; amenity counts, filters, scoring evidence, profile map circle and route origin use the selected address rather than the zone centroid. An address outside mapped boundaries keeps its coordinate and uses the closest zone only as context. The selected address and radius remain in the profile URL. Ordinary town/neighbourhood browsing and saved neighbourhood comparisons continue using neighbourhood reference points. Radius inclusion uses unrounded great-circle metres; distances are rounded only for display. The radius is not a walking-distance or school-admission catchment measurement.
 
 Singapore six-digit postal codes, including leading zeros, resolve through OneMap and an expiring database cache. The exact address is marked on the map; scores and amenity distances still describe the neighbourhood reference point, not the individual home. Nonexistent codes and provider failures are distinguished.
 

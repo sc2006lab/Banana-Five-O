@@ -1,6 +1,6 @@
 // UC-5.2 Check Commute Route (FR-TRV-02 – FR-TRV-05).
-import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { MapContainer, Marker, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { TRAVEL_MODES, TRAVEL_MODE_LABELS, type NeighbourhoodDetail, type RouteEstimateDto, type TravelMode } from '@famplan/shared';
@@ -9,6 +9,7 @@ import { useApp } from '../state/AppState';
 import { AddressSearch } from '../components/AddressSearch';
 import { OneMapTiles, SG_BOUNDS, homeIcon, pinIcon } from '../components/map';
 import { Icon, Notice, Spinner } from '../components/ui';
+import { originFromParams, originParams, profilePath } from '../lib/navigation';
 
 const MODE_ICONS: Record<TravelMode, string> = { pt: 'directions_transit', drive: 'directions_car', walk: 'directions_walk', cycle: 'directions_bike' };
 
@@ -25,6 +26,8 @@ type Dest = { lat: number; lng: number; label: string; address?: string };
 
 export function CommutePage() {
   const { id = '' } = useParams();
+  const [searchParams] = useSearchParams();
+  const origin = useMemo(() => originFromParams(searchParams), [searchParams]);
   const { prefs, scoring } = useApp();
   const [n, setN] = useState<NeighbourhoodDetail | null>(null);
   const saved: Dest[] = prefs?.destinations.map((d) => ({ lat: d.lat, lng: d.lng, label: d.label, address: d.address })) ?? [];
@@ -36,20 +39,28 @@ export function CommutePage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    api<NeighbourhoodDetail>(`/neighbourhoods/${id}?${scoringParams(scoring)}`)
-      .then(setN)
-      .catch((e) => setError((e as ApiError).message));
-  }, [id, scoring]);
+    const controller = new AbortController();
+    setN(null);
+    api<NeighbourhoodDetail>(`/neighbourhoods/${id}?${scoringParams(scoring, originParams(origin))}`, { signal: controller.signal })
+      .then((value) => { if (!controller.signal.aborted) setN(value); })
+      .catch((e) => { if (!controller.signal.aborted) setError((e as ApiError).message); });
+    return () => controller.abort();
+  }, [id, scoring, origin]);
 
   useEffect(() => {
-    if (!dest) return;
+    const controller = new AbortController();
+    setRoute(null);
+    if (!dest) { setLoading(false); return () => controller.abort(); }
     setLoading(true);
     setError(null);
-    api<RouteEstimateDto>(`/neighbourhoods/${id}/route?destLat=${dest.lat}&destLng=${dest.lng}&mode=${mode}&barrierFree=${barrierFree}`)
-      .then(setRoute)
-      .catch((e) => setError((e as ApiError).message))
-      .finally(() => setLoading(false));
-  }, [id, dest, mode, barrierFree]);
+    const p = new URLSearchParams({ destLat: String(dest.lat), destLng: String(dest.lng), mode, barrierFree: String(barrierFree) });
+    for (const [k, v] of Object.entries(originParams(origin))) p.set(k, String(v));
+    api<RouteEstimateDto>(`/neighbourhoods/${id}/route?${p}`, { signal: controller.signal })
+      .then((value) => { if (!controller.signal.aborted) setRoute(value); })
+      .catch((e) => { if (!controller.signal.aborted) setError((e as ApiError).message); })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
+  }, [id, dest, mode, barrierFree, origin]);
 
   if (!n) return error ? <div className="p-8"><Notice tone="error">{error}</Notice></div> : <Spinner />;
   const pts: [number, number][] = route?.geometry ?? (dest ? [[n.lat, n.lng], [dest.lat, dest.lng]] : [[n.lat, n.lng]]);
@@ -57,12 +68,12 @@ export function CommutePage() {
   return (
     <div className="mx-auto grid max-w-[1400px] gap-6 px-4 py-6 md:grid-cols-[380px_1fr] md:px-8">
       <div>
-        <Link to={`/n/${id}`} className="flex items-center gap-2 text-sm font-semibold text-muted hover:text-burgundy">
+        <Link to={profilePath(id, origin, Number(searchParams.get('radius')) || undefined)} className="flex items-center gap-2 text-sm font-semibold text-muted hover:text-burgundy">
           <Icon name="arrow_back" className="!text-[18px]" />
           Back to {n.name}
         </Link>
         <h1 className="mt-3 text-3xl font-bold tracking-tight text-burgundy">Commute & routes</h1>
-        <p className="mt-1 text-muted">From the {n.name} reference point to a priority destination.</p>
+        <p className="mt-1 text-muted">From {n.origin?.address ?? `the ${n.name} reference point`} to a priority destination.</p>
 
         <div className="card mt-5 p-4">
           <h2 className="text-lg font-semibold text-burgundy">Priority destination</h2>

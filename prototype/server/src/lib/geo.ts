@@ -21,7 +21,8 @@ export function distanceM(a: { lat: number; lng: number }, b: { lat: number; lng
 
 /** Inclusive radius check: a facility exactly on the boundary is inside (FR-NBH-03). */
 export function withinRadius(distance: number, radius: number): boolean {
-  return distance <= radius;
+  // Only absorb numerical noise at the boundary; display rounding must not enlarge a radius.
+  return Number.isFinite(distance) && distance >= 0 && distance <= radius + 1e-6;
 }
 
 export const SG_BOUNDS = { minLat: 1.15, maxLat: 1.48, minLng: 103.59, maxLng: 104.1 };

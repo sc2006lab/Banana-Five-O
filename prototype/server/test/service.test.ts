@@ -5,7 +5,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 
 vi.mock('../src/travel/onemap.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../src/travel/onemap.js')>()),
-  searchAddress: vi.fn(),
+  searchLocation: vi.fn(),
 }));
 
 import { prisma } from '../src/db.js';
@@ -22,7 +22,7 @@ import {
   type SearchParams,
 } from '../src/neighbourhoods/service.js';
 import { rebuildIndex } from '../src/neighbourhoods/store.js';
-import { searchAddress } from '../src/travel/onemap.js';
+import { searchLocation as searchAddress } from '../src/travel/onemap.js';
 import { resetDb, seedFixtures } from './fixtures.js';
 
 // Fixtures: TVSZ01–TVSZ12 at lat 1.30, 1.31 … 1.41 (lng 103.8), each with 3 childcare centres and one clinic about
@@ -109,24 +109,25 @@ describe('searchNeighbourhoods(): name and address matching (FR-DISC-01)', () =>
     expect(searchAddress).not.toHaveBeenCalled();
   });
 
-  it('puts the neighbourhood containing a geocoded address first, then others within 3 km by distance', async () => {
-    vi.mocked(searchAddress).mockResolvedValue([{ address: '1 Test Road', postalCode: '100001', lat: 1.3, lng: 103.8 }]);
+  it('analyses the exact address using its containing neighbourhood as context', async () => {
+    vi.mocked(searchAddress).mockResolvedValue([{ label: '1 Test Road', address: '1 Test Road', postal: '100001', lat: 1.3, lng: 103.8 }]);
     const r = await searchNeighbourhoods(params({ q: '1 Test Road' }));
     expect(r.matchedBy).toBe('address');
     expect(r.addressMatch).toMatchObject({ address: '1 Test Road', neighbourhoodId: 'TVSZ01' });
-    expect(r.results.map((x) => x.id)).toEqual(zones(1, 2, 3)); // TVSZ04 is about 3.3 km away
+    expect(r.results.map((x) => x.id)).toEqual(zones(1));
   });
 
-  it('orders by distance when the address lies outside every boundary', async () => {
-    vi.mocked(searchAddress).mockResolvedValue([{ address: 'Gap', postalCode: '100002', lat: 1.3149, lng: 103.8 }]);
+  it('keeps an address outside all boundaries rather than snapping it to the closest reference point', async () => {
+    vi.mocked(searchAddress).mockResolvedValue([{ label: 'Gap', address: 'Gap', postal: '100002', lat: 1.3149, lng: 103.8 }]);
     const r = await searchNeighbourhoods(params({ q: '2 Gap Lane' }));
     expect(r.addressMatch?.neighbourhoodId).toBeNull();
-    expect(r.results.map((x) => x.id)).toEqual(zones(2, 3, 1, 4, 5));
+    expect(r.results.map((x) => x.id)).toEqual(zones(2));
+    expect(r.results[0].lat).toBe(1.3149);
   });
 
   it('re-sorts address results when another sort is requested', async () => {
-    vi.mocked(searchAddress).mockResolvedValue([{ address: '1 Test Road', postalCode: '100001', lat: 1.3, lng: 103.8 }]);
-    expect(await ids({ q: '1 Test Road', sort: 'score', order: 'asc' })).toHaveLength(3);
+    vi.mocked(searchAddress).mockResolvedValue([{ label: '1 Test Road', address: '1 Test Road', postal: '100001', lat: 1.3, lng: 103.8 }]);
+    expect(await ids({ q: '1 Test Road', sort: 'score', order: 'asc' })).toHaveLength(1);
   });
 
   it('returns no results when neither name nor address matches', async () => {
