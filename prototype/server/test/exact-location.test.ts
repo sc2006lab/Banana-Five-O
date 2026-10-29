@@ -35,6 +35,14 @@ function facility(id: string, metres: number, category: AmenityCategory = 'child
 }
 
 describe('exact address radius', () => {
+  it('keeps default scoring evidence consistent with a 1 km profile rather than an obsolete 400 m rule', async () => {
+    index.facilities = [facility('bus stop 600 m away', 600, 'bus_stop')];
+    const point = index.atPoint(n, origin);
+    const evidence = index.evidence(point, {}, null);
+    const profile = await searchNeighbourhoods(params({ origin, radius: 1000 }));
+    expect(evidence.accessibility.value).toBe(1);
+    expect(profile.results[0].score.breakdown.find((b) => b.criterion === 'accessibility')?.rawValue).toBe(1);
+  });
   it.each([500, 1000, 2000] as const)('uses unrounded distances at the %i m boundary, without moving the address', async (radius) => {
     index.facilities = [facility('inside', radius - 0.2), facility('boundary', radius), facility('outside', radius + 0.2)];
     vi.mocked(searchLocation).mockResolvedValue([{ ...origin, label: origin.address }]);

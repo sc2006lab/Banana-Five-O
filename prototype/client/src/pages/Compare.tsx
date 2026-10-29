@@ -287,7 +287,7 @@ export function ComparePage() {
               )} />
               <Row icon="accessible" label="Accessibility" items={items} shade render={(i) => {
                 const acc = i.score.breakdown.find((b) => b.criterion === 'accessibility')!;
-                return <p className="text-sm">{acc.missing ? 'Data unavailable' : acc.rawLabel} <span className="text-xs text-muted">(bus stops within 400 m)</span></p>;
+                return <p className="text-sm">{acc.missing ? 'Data unavailable' : acc.rawLabel} <span className="text-xs text-muted">(transport-access proxy; bus stops within {scoring.thresholds.bus_stop ? fmtDistance(scoring.thresholds.bus_stop) : fmtDistance(radius)})</span></p>;
               }} />
               {me && (
                 <Row icon="edit_note" label="Your notes" items={items} render={(i) =>

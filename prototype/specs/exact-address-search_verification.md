@@ -23,14 +23,16 @@ Node 24.22.1; isolated PostgreSQL 18 instance on loopback port 55449; database n
 | Check | Result |
 |---|---|
 | All six existing migrations applied to empty isolated database | Passed |
-| Full server regression suite | 221 passed |
+| Full server regression suite | 222 passed |
 | Full client component suite | 23 passed |
 | Strict server/client TypeScript checks | Passed |
 | Production Vite/shared build | Passed |
 | Whitespace/conflict checks | Passed |
 | Existing configured coverage gate | Passed: 93.9% branches on the measured modules at the preceding 220-test checkpoint |
 
-Coverage reporting follows the repository's existing include list (scoring, neighbourhood service/deduplication, source transformation/validation); it is not a claim of whole-application coverage. The additional punctuation-input case was included in the final 221-test server run.
+Coverage reporting follows the repository's existing include list (scoring, neighbourhood service/deduplication, source transformation/validation); it is not a claim of whole-application coverage. The additional punctuation-input and default transport-access-radius cases were included in the final 222-test server run.
+
+Demo-preparation follow-up: the transport-access comparison label now shows its active distance threshold instead of a hard-coded 400 m. The default bus-stop scoring radius is aligned with the standard 1 km context, and scoring configuration `famplan-score-v1.1` records this rule revision. Accessibility remains a transport-access proxy, not verified step-free access. Type checks and the production build also passed after this correction.
 
 Targeted cases include 500/1000/2000 m boundaries (inside, exact, 20 cm outside), address/centroid disagreement, absent source data, postal leading zeros/prefixes/malformed brackets, ambiguous names, malformed provider records, rejected tokens, provider outages, invalid coordinates, duplicate requests, late responses and profile-to-route origin propagation. Existing Lab 4 address tests were updated to mock the actual `searchLocation` boundary and to reflect one exact-address analysis; outdated fixture fields were corrected.
 
@@ -52,4 +54,4 @@ Browser search at ION Orchard: changing 1 km to 500 m changed childcare count fr
 - This patch does not establish that every application feature works in every possible circumstance. External APIs, source coverage and credential expiry remain dependencies. Distances are straight-line, not walking routes or official school catchments.
 - Existing saved shortlists/comparisons are neighbourhood-level records, not saved individual property analyses. They continue using neighbourhood reference points; this patch does not change their persistence model.
 - Renewed local OneMap token was verified against the real search endpoint without logging it. Its expiry is 1 November 2026, 18:04 Singapore time. OneMap currently documents three-day tokens: https://www.onemap.gov.sg/apidocs/authentication
-- Vercel deployment was blocked during verification: both connector and existing CLI lacked access to the configured FamPlan team. The user was given Vercel's team-access consent link. No release should be described as live until access is restored, a new deployment uses the updated variables, and that deployment is verified.
+- Vercel access was initially blocked, then restored on 29 October. Commit `0b10ec3` was deployed to production as `dpl_GQiwu73UAYCGnRXrrhdsp14Ha6sv` and served real successful postal/place queries through `famplan-amber.vercel.app`; malformed `12345` returned HTTP 400. The scoring-label follow-up requires its own deployment before the public site can be claimed to contain that final correction.
