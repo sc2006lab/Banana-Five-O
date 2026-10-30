@@ -4,7 +4,8 @@ import type { AmenityCategory } from '@famplan/shared';
 import { checkSyncBudget, SyncBudgetError } from './budget.js';
 import { isInSingapore, polygonAreaSqm } from '../lib/geo.js';
 import { geocodeCached, OneMapAuthenticationError } from '../travel/onemap.js';
-import { datasetMetadata, downloadDataset, fetchWithTimeout, parseCsv, parseKmlDescription } from './datagovsg.js';
+import { datasetMetadata, downloadDataset, parseCsv, parseKmlDescription } from './datagovsg.js';
+import { fetchSupermarketData } from './overpass.js';
 
 export interface FacilityRecord {
   sourceRecordId: string;
@@ -271,21 +272,13 @@ const osmSupermarkets: FacilitySource = {
   minRecords: 300,
   categories: ['supermarket'],
   async fetch() {
-    const q =
-      '[out:json][timeout:60];(node["shop"="supermarket"](1.15,103.59,1.48,104.1);way["shop"="supermarket"](1.15,103.59,1.48,104.1););out center tags;';
-    const res = await fetchWithTimeout(
-      'https://overpass-api.de/api/interpreter',
-      { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' }, body: `data=${encodeURIComponent(q)}` },
-      90_000,
-    );
-    if (!res.ok) throw new Error(`Overpass API responded ${res.status}`);
-    const body = (await res.json()) as { osm3s?: { timestamp_osm_base?: string }; elements: any[] };
+    const body = await fetchSupermarketData();
     const records: FacilityRecord[] = [];
     for (const e of body.elements ?? []) {
       const lat = e.lat ?? e.center?.lat;
       const lng = e.lon ?? e.center?.lon;
       const t = e.tags ?? {};
-      if (!isInSingapore(lat, lng)) continue;
+      if (typeof lat !== 'number' || typeof lng !== 'number' || !isInSingapore(lat, lng)) continue;
       const name = [t.brand ?? t.name, t.branch].filter(Boolean).join(' — ') || t.name;
       if (!name) continue;
       const addr = [t['addr:housenumber'], t['addr:street'], t['addr:postcode'] && `Singapore ${t['addr:postcode']}`].filter(Boolean).join(' ');
