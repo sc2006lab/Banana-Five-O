@@ -40,10 +40,15 @@ const titleCase = (s: string) =>
     .replace(/\b([A-Z][a-z]{1,2})(\d{1,2})\b/g, (_m, a: string, n: string) => a.toUpperCase() + n);
 
 let lastCall = 0;
+let callQueue = Promise.resolve();
 async function throttle(minGapMs = 260) {
-  const wait = lastCall + minGapMs - Date.now();
-  if (wait > 0) await new Promise((r) => setTimeout(r, wait));
-  lastCall = Date.now();
+  const slot = callQueue.then(async () => {
+    const wait = lastCall + minGapMs - Date.now();
+    if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+    lastCall = Date.now();
+  });
+  callQueue = slot.catch(() => {});
+  await slot;
 }
 
 export async function searchAddress(q: string, limit = 6): Promise<GeocodeResult[]> {
@@ -56,23 +61,36 @@ export async function searchAddress(q: string, limit = 6): Promise<GeocodeResult
     try {
       const headers: Record<string, string> = routingConfigured() ? { Authorization: await getToken() } : {};
       const res = await fetchWithTimeout(url, { headers }, 8_000);
-      if (res.status === 401 || res.status === 403) throw new OneMapAuthenticationError();
+      if (res.status === 401 || res.status === 403) {
+        if (attempt === 0 && config.onemap.email && config.onemap.password) { await getToken(true); continue; }
+        throw new OneMapAuthenticationError();
+      }
       if (!res.ok) throw new Error(`OneMap search HTTP ${res.status}`);
       const body = (await res.json()) as { results?: any[]; error?: unknown };
-      if (body.error && /token|auth|forbidden/i.test(String(body.error))) throw new OneMapAuthenticationError();
+      if (body.error && /token|auth|forbidden/i.test(String(body.error))) {
+        if (attempt === 0 && config.onemap.email && config.onemap.password) { await getToken(true); continue; }
+        throw new OneMapAuthenticationError();
+      }
       if (body.error || !Array.isArray(body.results))
         throw new Error('OneMap search did not return valid results. Configure valid OneMap credentials if authentication is required.');
       markOk();
-      return (body.results ?? [])
+      const seen = new Set<string>();
+      return body.results
+        .filter((r) => r && typeof r === 'object' && typeof r.ADDRESS === 'string' && r.ADDRESS.trim() && r.ADDRESS !== 'NIL')
         .map((r) => ({
-          label: titleCase(r.SEARCHVAL ?? r.ADDRESS ?? ''),
-          address: titleCase(r.ADDRESS ?? ''),
-          postal: r.POSTAL && r.POSTAL !== 'NIL' ? r.POSTAL : null,
+          label: titleCase(typeof r.SEARCHVAL === 'string' && r.SEARCHVAL.trim() ? r.SEARCHVAL : r.ADDRESS),
+          address: titleCase(r.ADDRESS.trim()),
+          postal: typeof r.POSTAL === 'string' && /^\d{6}$/.test(r.POSTAL.trim()) ? r.POSTAL.trim() : null,
           lat: Number(r.LATITUDE),
           lng: Number(r.LONGITUDE),
         }))
         .filter((r) => isInSingapore(r.lat, r.lng) && (!postal || r.postal === postal))
-        .slice(0, limit);
+        .filter((r) => {
+          const key = `${r.lat},${r.lng},${r.postal ?? ''}`;
+          if (seen.has(key)) return false;
+          seen.add(key); return true;
+        })
+        .slice(0, Math.max(1, Math.min(20, limit)));
     } catch (e) {
       if (e instanceof OneMapAuthenticationError) {
         token = null;
@@ -98,7 +116,7 @@ export async function searchLocation(q: string, limit = 6): Promise<GeocodeResul
 export async function geocodeCached(key: string, query: string): Promise<{ lat: number; lng: number; address: string } | null> {
   const hit = await prisma.geocodeCache.findUnique({ where: { key } });
   const maxAge = hit?.lat !== null && hit?.lng !== null ? 7 * 86_400_000 : 86_400_000;
-  if (hit && Date.now() - hit.retrievedAt.getTime() < maxAge)
+  if (hit && (hit.lat === null && hit.lng === null || hit.lat !== null && hit.lng !== null && isInSingapore(hit.lat, hit.lng)) && Date.now() - hit.retrievedAt.getTime() < maxAge)
     return hit.lat !== null && hit.lng !== null ? { lat: hit.lat, lng: hit.lng, address: hit.address ?? '' } : null;
   const results = await searchAddress(query, 1);
   const r = results[0] ?? null;
@@ -113,14 +131,21 @@ export async function geocodeCached(key: string, query: string): Promise<{ lat: 
 // ───────────── Routing ─────────────
 
 let token: { value: string; expiresAt: number } | null = null;
+let tokenRequest: Promise<string> | null = null;
 
 export function routingConfigured(): boolean {
   return Boolean(config.onemap.accessToken || (config.onemap.email && config.onemap.password));
 }
 
-async function getToken(): Promise<string> {
-  if (config.onemap.accessToken) return config.onemap.accessToken;
-  if (token && token.expiresAt > Date.now() + 60_000) return token.value;
+async function getToken(refresh = false): Promise<string> {
+  if (!refresh && token && token.expiresAt > Date.now() + 60_000) return token.value;
+  if (!refresh && config.onemap.accessToken) return config.onemap.accessToken;
+  if (tokenRequest) return tokenRequest;
+  tokenRequest = requestToken();
+  try { return await tokenRequest; } finally { tokenRequest = null; }
+}
+
+async function requestToken(): Promise<string> {
   const res = await fetchWithTimeout(
     `${BASE}/api/auth/post/getToken`,
     { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: config.onemap.email, password: config.onemap.password }) },

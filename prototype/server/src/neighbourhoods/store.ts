@@ -11,7 +11,7 @@ import {
   type Provenance,
 } from '@famplan/shared';
 import { prisma } from '../db.js';
-import { distanceM, haversineM, pointInBoundary } from '../lib/geo.js';
+import { distanceM, haversineM, pointInBoundary, withinRadius } from '../lib/geo.js';
 import { COMMUTE_MODEL, SCORING_CONFIG, estimateMinutes } from '../scoring/config.js';
 import type { ScoringEvidence } from '../scoring/score.js';
 import { SOURCES, type FacilitySource } from '../synchronisation/sources.js';
@@ -106,12 +106,26 @@ export class NeighbourhoodIndex {
   }
 
   countWithin(n: IndexedNeighbourhood, cats: AmenityCategory[], radius: number): number {
-    return cats.reduce((s, c) => s + n.near[c].filter((x) => x.d <= radius).length, 0);
+    return cats.reduce((s, c) => s + (this.categoryState(c).state === 'UNAVAILABLE' ? 0 : n.near[c].filter((x) => withinRadius(x.d, radius)).length), 0);
+  }
+
+  /** Rebase a profile on a selected address, without mutating shared neighbourhood data. */
+  atPoint(n: IndexedNeighbourhood, origin: { lat: number; lng: number }): IndexedNeighbourhood {
+    const near = Object.fromEntries(AMENITY_CATEGORIES.map((c) => [c, [] as Near[]])) as IndexedNeighbourhood['near'];
+    const nearest = Object.fromEntries(AMENITY_CATEGORIES.map((c) => [c, null])) as IndexedNeighbourhood['nearest'];
+    this.facilities.forEach((f, i) => {
+      const d = haversineM(origin.lat, origin.lng, f.lat, f.lng);
+      if (!nearest[f.category] || d < nearest[f.category]!.d) nearest[f.category] = { f: i, d };
+      if (withinRadius(d, MAX_RADIUS)) near[f.category].push({ f: i, d });
+    });
+    for (const c of AMENITY_CATEGORIES) near[c].sort((a, b) => a.d - b.d || this.facilities[a.f].name.localeCompare(this.facilities[b.f].name) || this.facilities[a.f].id.localeCompare(this.facilities[b.f].id));
+    return { ...n, lat: origin.lat, lng: origin.lng, near, nearest };
   }
 
   nearestOf(n: IndexedNeighbourhood, cats: AmenityCategory[]): Near | null {
     let best: Near | null = null;
     for (const c of cats) {
+      if (this.categoryState(c).state === 'UNAVAILABLE') continue;
       const x = n.nearest[c];
       if (x && (!best || x.d < best.d)) best = x;
     }
@@ -148,7 +162,7 @@ export class NeighbourhoodIndex {
       } else {
         const near = this.nearestOf(n, rule.categories);
         out[c] = near
-          ? { value: near.d, label: `Nearest ${near.d >= 1000 ? `${(near.d / 1000).toFixed(1)} km` : `${near.d} m`}` }
+          ? { value: Math.round(near.d), label: `Nearest ${near.d >= 1000 ? `${(near.d / 1000).toFixed(1)} km` : `${Math.round(near.d)} m`}` }
           : { value: null, label: 'No facility found', missingReason: 'No facility with coordinates was found.' };
       }
     }
@@ -241,8 +255,8 @@ export async function buildIndex(now = new Date()): Promise<NeighbourhoodIndex> 
       for (let dx = -1; dx <= 1; dx++)
         for (const i of grid.get(`${gy + dy}:${gx + dx}`) ?? []) {
           const f = idx.facilities[i];
-          const d = Math.round(haversineM(n.refLat, n.refLng, f.lat, f.lng));
-          if (d <= MAX_RADIUS) near[f.category].push({ f: i, d });
+          const d = haversineM(n.refLat, n.refLng, f.lat, f.lng);
+          if (withinRadius(d, MAX_RADIUS)) near[f.category].push({ f: i, d });
         }
     for (const c of AMENITY_CATEGORIES) near[c].sort((a, b) => a.d - b.d || idx.facilities[a.f].name.localeCompare(idx.facilities[b.f].name));
     const nearest = Object.fromEntries(
@@ -251,7 +265,7 @@ export async function buildIndex(now = new Date()): Promise<NeighbourhoodIndex> 
         let best: Near | null = null;
         for (const i of nearestByCat.get(c)!) {
           const f = idx.facilities[i];
-          const d = Math.round(haversineM(n.refLat, n.refLng, f.lat, f.lng));
+          const d = haversineM(n.refLat, n.refLng, f.lat, f.lng);
           if (!best || d < best.d) best = { f: i, d };
         }
         return [c, best];

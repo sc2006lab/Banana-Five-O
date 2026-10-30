@@ -153,6 +153,18 @@ const optionalCoord = (min: number, max: number, msg: string) =>
 
 const destLabel = z.string().trim().max(40, 'Destination label must be at most 40 characters.').optional();
 
+const originFields = {
+  originLat: optionalCoord(1.15, 1.48, 'Search latitude is outside Singapore.'),
+  originLng: optionalCoord(103.59, 104.1, 'Search longitude is outside Singapore.'),
+  originAddress: z.string().trim().min(1).max(200).optional(),
+  originPostal: z.string().regex(/^\d{6}$/, 'Postal code must contain six digits.').optional(),
+};
+function validateOrigin(q: { originLat?: number; originLng?: number; originAddress?: string; originPostal?: string }, ctx: z.RefinementCtx) {
+  const any = q.originLat !== undefined || q.originLng !== undefined || q.originAddress !== undefined || q.originPostal !== undefined;
+  if (any && (q.originLat === undefined || q.originLng === undefined || !q.originAddress))
+    ctx.addIssue({ code: 'custom', path: ['originAddress'], message: 'Choose a complete address result with latitude and longitude.' });
+}
+
 /** Amenity thresholds as "category:radius,category:radius" (FR-PREF-04 applied to scoring). */
 const thresholdsParam = z
   .string()
@@ -195,8 +207,10 @@ export const searchQuerySchema = z
     page: optionalInt('Page must be a whole number.'),
     pageSize: optionalInt('Page size must be a whole number.'),
     ...weightParams,
+    ...originFields,
   })
   .superRefine((q, ctx) => {
+    validateOrigin(q, ctx);
     const radius = q.radius ?? 1000;
     if (!(PROXIMITY_RADII as readonly number[]).includes(radius))
       ctx.addIssue({ code: 'custom', path: ['radius'], message: 'Radius must be 500 m, 1 km or 2 km.' });
@@ -235,6 +249,7 @@ export const searchQuerySchema = z
 export type SearchQueryInput = z.input<typeof searchQuerySchema>;
 
 export const routeQuerySchema = z.object({
+  ...originFields,
   destLat: z.coerce.number('Destination latitude is required.').min(1.1).max(1.5),
   destLng: z.coerce.number('Destination longitude is required.').min(103.5).max(104.2),
   mode: z.enum(TRAVEL_MODES, 'Travel mode must be one of: pt, walk, drive, cycle.').default('pt'),
@@ -242,7 +257,7 @@ export const routeQuerySchema = z.object({
     .enum(['true', 'false'])
     .optional()
     .transform((v) => v === 'true'),
-});
+}).superRefine(validateOrigin);
 
 export const noteSchema = z.object({
   text: z.string().max(NOTE_MAX, `Notes must be at most ${NOTE_MAX} characters.`),
@@ -285,8 +300,10 @@ export const scoringParamsSchema = z
     destLabel: destLabel,
     th: thresholdsParam,
     ...weightParams,
+    ...originFields,
   })
   .superRefine((q, ctx) => {
+    validateOrigin(q, ctx);
     if (q.radius !== undefined && !(PROXIMITY_RADII as readonly number[]).includes(q.radius))
       ctx.addIssue({ code: 'custom', path: ['radius'], message: 'Radius must be 500 m, 1 km or 2 km.' });
     if ((q.destLat === undefined) !== (q.destLng === undefined))

@@ -79,6 +79,14 @@ export interface FamilyScoreDto {
   computedAt: string;
 }
 
+/** Selected address used for distance calculations; never the neighbourhood centroid. */
+export interface LocationOrigin {
+  address: string;
+  lat: number;
+  lng: number;
+  postal: string | null;
+}
+
 export interface NeighbourhoodSummary {
   id: string;
   name: string;
@@ -91,6 +99,7 @@ export interface NeighbourhoodSummary {
   highlights: { category: AmenityCategory; count: number; nearestM: number | null; state: AvailabilityState }[];
   commuteMin: number | null;
   nearestSelectedM: number | null;
+  origin?: LocationOrigin;
 }
 
 export interface SearchResponse {
@@ -99,7 +108,8 @@ export interface SearchResponse {
   pageSize: number;
   radius: ProximityRadius;
   results: NeighbourhoodSummary[];
-  matchedBy: 'all' | 'name' | 'address';
+  matchedBy: 'all' | 'name' | 'address' | 'ambiguous';
+  locationChoices?: GeocodeResult[];
   addressMatch?: { address: string; lat: number; lng: number; neighbourhoodId: string | null };
   limitation: string;
 }
@@ -119,6 +129,7 @@ export interface NeighbourhoodDetail {
   score: FamilyScoreDto;
   provenance: Provenance[];
   limitations: string[];
+  origin?: LocationOrigin;
 }
 
 export interface RouteLeg {

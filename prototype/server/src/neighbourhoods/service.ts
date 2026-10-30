@@ -16,11 +16,13 @@ import {
   type NeighbourhoodSummary,
   type ProximityRadius,
   type SearchResponse,
+  type LocationOrigin,
 } from '@famplan/shared';
-import { DISTANCE_BASIS, pointInBoundary } from '../lib/geo.js';
+import { DISTANCE_BASIS, haversineM, pointInBoundary, withinRadius } from '../lib/geo.js';
 import { HttpError } from '../lib/http.js';
 import { calculateScore } from '../scoring/score.js';
 import { searchLocation } from '../travel/onemap.js';
+import { postalCode } from '../travel/postal.js';
 import { index, type IndexedNeighbourhood } from './store.js';
 
 export interface ScoringContext {
@@ -28,6 +30,7 @@ export interface ScoringContext {
   thresholds: Partial<Record<AmenityCategory, ProximityRadius>>;
   destination: { lat: number; lng: number; label: string } | null;
   radius: ProximityRadius;
+  origin?: LocationOrigin;
 }
 
 export function scoringContext(q: Record<string, unknown>): ScoringContext {
@@ -42,11 +45,14 @@ export function scoringContext(q: Record<string, unknown>): ScoringContext {
         ? { lat: q.destLat, lng: q.destLng, label: (q.destLabel as string) || 'destination' }
         : null,
     radius: ((q.radius as number) ?? 1000) as ProximityRadius,
+    origin: typeof q.originLat === 'number' && typeof q.originLng === 'number'
+      ? { lat: q.originLat, lng: q.originLng, address: String(q.originAddress), postal: (q.originPostal as string) || null }
+      : undefined,
   };
 }
 
 export function summarise(n: IndexedNeighbourhood, ctx: ScoringContext, category?: AmenityCategory): NeighbourhoodSummary {
-  const score = calculateScore(index.evidence(n, ctx.thresholds, ctx.destination), ctx.weights, index.datasetVersions());
+  const score = calculateScore(index.evidence(n, scoreThresholds(ctx), ctx.destination), ctx.weights, index.datasetVersions());
   const highlights = amenitySummaries(n, ctx.radius).map((a) => ({
     category: a.category,
     count: a.matchedCount,
@@ -64,8 +70,13 @@ export function summarise(n: IndexedNeighbourhood, ctx: ScoringContext, category
     coverage: highlights.filter((h) => h.count > 0).length,
     highlights,
     commuteMin: index.commuteMinutes(n, ctx.destination),
-    nearestSelectedM: category ? (n.nearest[category]?.d ?? null) : null,
+    nearestSelectedM: category && index.categoryState(category).state !== 'UNAVAILABLE' && n.nearest[category] ? Math.round(n.nearest[category]!.d) : null,
+    origin: ctx.origin,
   };
+}
+
+function scoreThresholds(ctx: ScoringContext) {
+  return { ...Object.fromEntries(AMENITY_CATEGORIES.map((c) => [c, ctx.radius])), ...ctx.thresholds };
 }
 
 const norm = (s: string) => s.toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -88,7 +99,7 @@ export function levenshtein(a: string, b: string): number {
 /** Town / planning-area / subzone-name match with tolerance for small spelling variants (FR-DISC-01). */
 export function nameMatches(n: { name: string; planningArea: string; region: string }, q: string): boolean {
   const nq = norm(q);
-  if (!nq) return true;
+  if (!nq) return !q.trim();
   const fields = [n.name, n.planningArea, n.region.replace(/ Region$/, '')].map(norm);
   if (fields.some((f) => f.includes(nq))) return true;
   if (nq.length < 5) return false;
@@ -115,17 +126,21 @@ export async function searchNeighbourhoods(p: SearchParams): Promise<SearchRespo
   let matchedBy: SearchResponse['matchedBy'] = 'all';
   let addressMatch: SearchResponse['addressMatch'];
 
-  if (p.q) {
+  let origin = p.origin;
+  if (p.q && !origin) {
+    if (!/[\p{L}\p{N}]/u.test(p.q)) throw new HttpError(400, 'Enter a place name, street address or six-digit postal code.', { q: 'Search must contain a name or postal code.' });
+    // Reject malformed postcode-only inputs before fuzzy neighbourhood matching.
+    const postal = postalCode(p.q);
     const byName = pool.filter((n) => nameMatches(n, p.q));
     const looksLikeAddress = /\d/.test(p.q);
-    if (byName.length && !looksLikeAddress) {
+    if (byName.length && !looksLikeAddress && !postal) {
       pool = byName;
       matchedBy = 'name';
     } else {
       // Address or postal code: geocode with OneMap, then rank neighbourhoods around the point.
       let hits;
       try {
-        hits = await searchLocation(p.q, 1);
+        hits = await searchLocation(p.q, 20);
       } catch (error) {
         if (error instanceof HttpError) throw error;
         if (byName.length) {
@@ -138,6 +153,9 @@ export async function searchNeighbourhoods(p: SearchParams): Promise<SearchRespo
           });
       }
       if (hits) {
+        if (hits.length > 1) {
+          return { total: 0, page: p.page, pageSize: p.pageSize, radius: p.radius, results: [], matchedBy: 'ambiguous', locationChoices: hits, limitation: LIMITATION_PROFILE };
+        }
         const hit = hits[0];
         if (!hit) {
           if (looksLikeAddress)
@@ -147,19 +165,22 @@ export async function searchNeighbourhoods(p: SearchParams): Promise<SearchRespo
           pool = byName;
           matchedBy = 'name';
         } else {
-          const containing = index.neighbourhoods.find((n) => pointInBoundary(hit.lat, hit.lng, n.boundary)) ?? null;
-          addressMatch = { address: hit.address, lat: hit.lat, lng: hit.lng, neighbourhoodId: containing?.id ?? null };
-          pool = pool
-            .map((n) => ({ n, d: Math.hypot(n.lat - hit.lat, (n.lng - hit.lng) * Math.cos((hit.lat * Math.PI) / 180)) * 111_320 }))
-            .filter((x) => x.d <= 3000 || x.n.id === containing?.id)
-            .sort((a, b) => a.d - b.d)
-            .map((x) => x.n);
-          if (containing) pool = [containing, ...pool.filter((n) => n !== containing)];
-          matchedBy = 'address';
+          origin = { address: hit.address, lat: hit.lat, lng: hit.lng, postal: hit.postal };
         }
       }
     }
   }
+
+  if (origin) {
+    const containing = index.neighbourhoods.find((n) => pointInBoundary(origin!.lat, origin!.lng, n.boundary));
+    const context = containing ?? index.neighbourhoods.reduce<IndexedNeighbourhood | undefined>((best, n) =>
+      !best || haversineM(origin!.lat, origin!.lng, n.lat, n.lng) < haversineM(origin!.lat, origin!.lng, best.lat, best.lng) ? n : best, undefined);
+    addressMatch = { ...origin, neighbourhoodId: containing?.id ?? null };
+    // One exact address has one set of amenity evidence. Do not duplicate it across surrounding zones.
+    pool = context ? [index.atPoint(context, origin)] : [];
+    matchedBy = 'address';
+  }
+  const ctx = { ...p, origin };
 
   if (p.areas.length) {
     const set = new Set(p.areas.map((a) => a.toUpperCase()));
@@ -173,7 +194,7 @@ export async function searchNeighbourhoods(p: SearchParams): Promise<SearchRespo
   if (p.category && p.maxNearest !== undefined) pool = pool.filter((n) => (n.nearest[p.category!]?.d ?? Infinity) <= p.maxNearest!);
   if (p.maxCommute !== undefined) pool = pool.filter((n) => (index.commuteMinutes(n, p.destination) ?? Infinity) <= p.maxCommute!);
 
-  let results = pool.map((n) => summarise(n, p, p.category));
+  let results = pool.map((n) => summarise(n, ctx, p.category));
   if (matchedBy !== 'address' || p.sort !== 'score' || p.order) {
     const dir = p.order ?? (p.sort === 'score' || p.sort === 'coverage' ? 'desc' : 'asc');
     const key = (r: NeighbourhoodSummary): number | null =>
@@ -198,7 +219,7 @@ export async function searchNeighbourhoods(p: SearchParams): Promise<SearchRespo
     results: results.slice(start, start + p.pageSize),
     matchedBy,
     addressMatch,
-    limitation: LIMITATION_PROFILE,
+    limitation: origin ? 'Counts, scores and straight-line distances use your selected address. Source coordinates may have positional inaccuracies; this is not a school-admission catchment assessment.' : LIMITATION_PROFILE,
   };
 }
 
@@ -211,13 +232,13 @@ export function getNeighbourhood(id: string): IndexedNeighbourhood {
 export function amenitySummaries(n: IndexedNeighbourhood, radius: ProximityRadius): AmenitySummaryDto[] {
   return AMENITY_CATEGORIES.map((c) => {
     const st = index.categoryState(c);
-    const within = n.near[c].filter((x) => x.d <= radius);
+    const within = st.state === 'UNAVAILABLE' ? [] : n.near[c].filter((x) => withinRadius(x.d, radius));
     const nearest = within[0] ? index.facilities[within[0].f] : null;
     const state = st.state === 'UNAVAILABLE' ? 'UNAVAILABLE' : within.length === 0 ? (st.state === 'AVAILABLE' ? 'NO_MATCH' : st.state) : st.state;
     return {
       category: c,
       matchedCount: st.state === 'UNAVAILABLE' ? 0 : within.length,
-      nearest: nearest ? { id: nearest.id, name: nearest.name, distanceM: within[0].d } : null,
+      nearest: nearest ? { id: nearest.id, name: nearest.name, distanceM: Math.round(within[0].d) } : null,
       state,
       stateReason:
         state === 'NO_MATCH'
@@ -234,15 +255,16 @@ export function facilitiesNear(n: IndexedNeighbourhood, radius: ProximityRadius,
   for (const c of cats) {
     if (index.categoryState(c).state === 'UNAVAILABLE') continue;
     for (const x of n.near[c]) {
-      if (x.d > radius) break;
+      if (!withinRadius(x.d, radius)) break;
       const f = index.facilities[x.f];
       out.push({ id: f.id, name: f.name, category: f.category, address: f.address, lat: f.lat, lng: f.lng, distanceM: x.d, sourceId: f.sourceIds.join(', '), details: f.details });
     }
   }
-  return out.sort((a, b) => a.distanceM - b.distanceM || a.name.localeCompare(b.name));
+  return out.sort((a, b) => a.distanceM - b.distanceM || a.name.localeCompare(b.name) || a.id.localeCompare(b.id)).map((f) => ({ ...f, distanceM: Math.round(f.distanceM) }));
 }
 
 export function neighbourhoodDetail(n: IndexedNeighbourhood, ctx: ScoringContext): NeighbourhoodDetail {
+  if (ctx.origin) n = index.atPoint(n, ctx.origin);
   const boundarySource = index.sources.get('ura-subzones');
   return {
     id: n.id,
@@ -252,12 +274,13 @@ export function neighbourhoodDetail(n: IndexedNeighbourhood, ctx: ScoringContext
     lat: n.lat,
     lng: n.lng,
     boundaryBasis: `URA Master Plan 2019 subzone ${n.id} (${n.name}, ${n.planningArea} planning area).`,
-    referencePointBasis: `${n.boundaryBasis} ${DISTANCE_BASIS}`,
+    referencePointBasis: ctx.origin ? `Selected address: ${ctx.origin.address}. Straight-line great-circle distances from its coordinate; radius inclusion is checked before display rounding.` : `${n.boundaryBasis} ${DISTANCE_BASIS}`,
     boundary: n.boundary,
     radius: ctx.radius,
     amenities: amenitySummaries(n, ctx.radius),
-    score: calculateScore(index.evidence(n, ctx.thresholds, ctx.destination), ctx.weights, index.datasetVersions()),
+    score: calculateScore(index.evidence(n, scoreThresholds(ctx), ctx.destination), ctx.weights, index.datasetVersions()),
     provenance: boundarySource ? [boundarySource.provenance] : [],
-    limitations: [LIMITATION_PROFILE, LIMITATION_EDUCATION, LIMITATION_SCORE],
+    limitations: [ctx.origin ? 'Distances and amenity counts use the selected address, not the neighbourhood reference point.' : LIMITATION_PROFILE, LIMITATION_EDUCATION, LIMITATION_SCORE],
+    origin: ctx.origin,
   };
 }

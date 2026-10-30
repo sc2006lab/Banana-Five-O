@@ -17,8 +17,8 @@ export interface ScoringConfiguration {
 }
 
 export const SCORING_CONFIG: ScoringConfiguration = {
-  version: 'famplan-score-v1.0',
-  effectiveDate: '2026-09-25',
+  version: 'famplan-score-v1.1',
+  effectiveDate: '2026-10-29',
   criteria: {
     childcare: {
       kind: 'count',
@@ -72,10 +72,10 @@ export const SCORING_CONFIG: ScoringConfiguration = {
     accessibility: {
       kind: 'count',
       categories: ['bus_stop'],
-      defaultRadiusM: 400,
+      defaultRadiusM: 1000,
       target: 12,
       description:
-        'Bus stops within 400 m of the reference point (transport-access proxy, not verified step-free access); 12 or more scores 1.0.',
+        'Bus stops within the selected radius (default 1 km; transport-access proxy, not verified step-free access); 12 or more scores 1.0.',
     },
   },
   missingDataTreatment:

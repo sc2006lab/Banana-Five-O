@@ -1,9 +1,25 @@
 import type { NavigateFunction } from 'react-router-dom';
+import { singaporePostalInput, type LocationOrigin } from '@famplan/shared';
 
 export function malformedPostalQuery(query: string): boolean {
-  const candidate = query.trim();
-  return /^(?:Singapore\s*|S\s*\(?)?\d+\s*\)?$/i.test(candidate)
-    && !/^(?:Singapore\s*|S\s*\(?)?\d{6}\s*\)?$/i.test(candidate);
+  return singaporePostalInput(query).malformed;
+}
+
+export function originParams(origin?: LocationOrigin): Record<string, string | number> {
+  return origin ? { originLat: origin.lat, originLng: origin.lng, originAddress: origin.address, ...(origin.postal ? { originPostal: origin.postal } : {}) } : {};
+}
+
+export function originFromParams(params: URLSearchParams): LocationOrigin | undefined {
+  // Preserve invalid/partial parameters for server-side validation rather than silently using a centroid.
+  if (!['originLat', 'originLng', 'originAddress', 'originPostal'].some((k) => params.has(k))) return undefined;
+  return { lat: params.has('originLat') ? Number(params.get('originLat')) : NaN, lng: params.has('originLng') ? Number(params.get('originLng')) : NaN, address: params.get('originAddress') ?? '', postal: params.get('originPostal') || null };
+}
+
+export function profilePath(id: string, origin?: LocationOrigin, radius?: number, suffix = ''): string {
+  const p = new URLSearchParams();
+  for (const [k, v] of Object.entries(originParams(origin))) p.set(k, String(v));
+  if (radius) p.set('radius', String(radius));
+  return `/n/${id}${suffix}${p.size ? `?${p}` : ''}`;
 }
 
 export function explorePath(query: string): string {
