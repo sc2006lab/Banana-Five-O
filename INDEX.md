@@ -15,7 +15,7 @@ Team Banana Five-O, SC2006 Software Engineering. FamPlan helps couples planning 
 | System architecture | SRS §8.2; [figure](Lab5/figures/FamPlan_System_Architecture_v1.6.png) |
 | UI state machine / dialog map | SRS §10; [Lab 2 dialog map](Lab2/DialogMap.pdf) |
 | Source code and tests | [prototype/](prototype/); [source zip](Lab5/FamPlan_Source_Code.zip) |
-| Demo video | Link to be added |
+| Demo video | [Watch on YouTube](https://www.youtube.com/watch?v=JjTOS8AaOk8) |
 | Declaration of contributions | [PDF](Lab5/FamPlan_Declaration_of_Contributions.pdf), [Word](Lab5/FamPlan_Declaration_of_Contributions.docx) |
 
 ## Lab 4: implementation and testing
@@ -25,6 +25,7 @@ Team Banana Five-O, SC2006 Software Engineering. FamPlan helps couples planning 
 | Test cases and testing results v1.1 | [PDF](Lab4/FamPlan_Lab4_Test_Cases_v1.1.pdf), [Word](Lab4/FamPlan_Lab4_Test_Cases_v1.1.docx) |
 | AI report | [PDF](Lab4/FamPlan_Lab4_AI_Report.pdf), [Word](Lab4/FamPlan_Lab4_AI_Report.docx), [rebuilt class from the experiment](Lab4/AI_Experiment_1_Rebuilt_score.ts.txt) |
 | Demo script and checklists | [PDF](Lab4/FamPlan_Demo_Outline_and_Lab_4_5_Checklist.pdf), [Word](Lab4/FamPlan_Demo_Outline_and_Lab_4_5_Checklist.docx) |
+| Demo video | [Watch on YouTube](https://www.youtube.com/watch?v=JjTOS8AaOk8) |
 
 ## Earlier labs
 
