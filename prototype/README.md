@@ -60,6 +60,8 @@ Back up the database and stop application writes before applying the new migrati
 
 No existing development or production database was upgraded during this implementation; verification used an isolated fixture database.
 
+`20261031090000_destination_travel_mode` adds a travel mode to each priority destination. Existing destinations become public transport, matching how they were already scored. Apply it with `npm run db:deploy` before deploying code that reads the new column.
+
 ## Commands
 
 | Command | Purpose |
@@ -87,7 +89,7 @@ Test fixtures refuse to clear a database whose name does not end in `_test`. Use
 | Requirements | Implementation |
 |---|---|
 | FR-ACC-01–06 | Registration, login/logout, email reset, display-name editing, confirmed account deletion |
-| FR-PREF-01–07 | Family stages, areas, up to 3 destinations, amenity radii, eight 0–5 weights, saved profiles and editable presets |
+| FR-PREF-01–07 | Family stages, areas, up to 3 destinations each with a travel mode, amenity radii, eight 0–5 weights, saved profiles and editable presets |
 | FR-DISC-01–06 | Search, filters, apply saved preferences, profile labels, sorting and validation |
 | FR-NBH-01–10 | Neighbourhood boundaries/reference points, nine amenity categories, 500/1000/2000 m radii, distances, source metadata and availability warnings |
 | FR-TRV-01–05 | Maps, provider-backed routes where configured, supported modes, barrier-free limitation and route provenance |
@@ -122,10 +124,12 @@ The existing discovery rule selects residential subzones containing at least thr
 
 Distances are straight-line distances from a neighbourhood reference point, not walking distances from a particular home. Kindergarten classification currently uses facility names; missing source detail must not be interpreted as confirmed service availability. The accessibility score is a bus-stop proximity proxy, not verified step-free access.
 
-Scores use disclosed normalisation and weights, with exact .5 rounded upward. Missing criteria are excluded; if all available criteria have weight zero, the documented equal-weight fallback applies. Live-route estimates and locally modelled commute times are distinguished.
+Scores use disclosed normalisation and weights, with exact .5 rounded upward. Missing criteria are excluded; if all available criteria have weight zero, the documented equal-weight fallback applies. Live-route estimates and locally modelled commute times are distinguished. The commute criterion averages the modelled time to every priority destination, each by its saved travel mode.
 
 ## Verification and remaining evidence
 
 The local real-data run and assignment demonstration steps are documented in [real-data demonstration](specs/live-data_verification.md). These are provider datasets retrieved through APIs and refreshed daily, with publisher dates shown; they are not real-time childcare vacancy or school admission feeds.
 
 See [implementation verification](specs/family-planning-v1-1_verification.md). Performance at 100,000 records/100 concurrent users, the one-hour reliability target, moderated usability trials, full WCAG AA review and the required multi-browser matrix need separate acceptance evidence. Do not describe the prototype as meeting all 29 NFRs merely because the build and unit tests pass.
+
+`npm run loadtest -w server -- <localUrl> <users> <seconds> [thinkMs]` runs a read-only load test against a local server; [commute verification](specs/commute-destinations_verification.md) records the latest results and what they do not prove.

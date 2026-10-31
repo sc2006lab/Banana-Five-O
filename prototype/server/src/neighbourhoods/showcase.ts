@@ -85,7 +85,7 @@ let cache: { builtAt: Date; value: Showcase } | null = null;
 export function buildShowcase(idx: NeighbourhoodIndex = index): Showcase {
   if (cache && cache.builtAt === idx.builtAt) return cache.value;
   const zones: ShowcaseZone[] = idx.neighbourhoods.map((n) => {
-    const s = n.searchable ? calculateScore(idx.evidence(n, {}, null), DEFAULT_WEIGHTS, idx.datasetVersions()) : null;
+    const s = n.searchable ? calculateScore(idx.evidence(n, {}, []), DEFAULT_WEIGHTS, idx.datasetVersions()) : null;
     const [cx, cy] = project(n.lng, n.lat);
     return {
       id: n.id,

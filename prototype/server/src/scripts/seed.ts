@@ -40,7 +40,7 @@ if (demo) {
       confirmedWeights: ['commute'],
       destinations: {
         deleteMany: {},
-        create: [{ slot: 1, label: 'Work', queryText: 'Raffles Place MRT', address: 'Raffles Place MRT Station', lat: 1.28393, lng: 103.85143 }],
+        create: [{ slot: 1, label: 'Work', queryText: 'Raffles Place MRT', address: 'Raffles Place MRT Station', lat: 1.28393, lng: 103.85143, mode: 'pt' }],
       },
     },
   });

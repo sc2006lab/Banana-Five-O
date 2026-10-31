@@ -6,12 +6,17 @@ import L from 'leaflet';
 import {
   AMENITY_CATEGORIES,
   AMENITY_LABELS,
+  DEFAULT_TRAVEL_MODE,
+  DESTINATIONS_MAX,
   FAMILY_STAGES,
   FAMILY_STAGE_LABELS,
   LIMITATION_EDUCATION,
   PROXIMITY_RADII,
   SORT_LABELS,
   SORT_OPTIONS,
+  TRAVEL_MODES,
+  TRAVEL_MODE_LABELS,
+  TRAVEL_MODE_PHRASES,
   type AmenityCategory,
   type AreaDto,
   type FamilyStage,
@@ -20,8 +25,9 @@ import {
   type SearchResponse,
   type SortOption,
   type LocationOrigin,
+  type TravelMode,
 } from '@famplan/shared';
-import { api, ApiError, fmtDistance, scoringParams } from '../lib/api';
+import { api, ApiError, destinationNames, fmtDistance, scoringDestinations, scoringParams, type ScoringDestination } from '../lib/api';
 import { useApp } from '../state/AppState';
 import { AddressSearch } from '../components/AddressSearch';
 import { Dropdown } from '../components/Dropdown';
@@ -62,7 +68,7 @@ function FitToResults({ results, focus, view, radius }: { results: Neighbourhood
   return null;
 }
 
-function ResultCard({ r, radius, destinationLabel, index = 0 }: { r: NeighbourhoodSummary; radius: number; destinationLabel?: string; index?: number }) {
+function ResultCard({ r, radius, index = 0 }: { r: NeighbourhoodSummary; radius: number; index?: number }) {
   const { shortlistIds, toggleShortlist, compareIds, toggleCompare } = useApp();
   const h = Object.fromEntries(r.highlights.map((x) => [x.category, x])) as Record<AmenityCategory, NeighbourhoodSummary['highlights'][number]>;
   const saved = shortlistIds.has(r.id);
@@ -103,8 +109,13 @@ function ResultCard({ r, radius, destinationLabel, index = 0 }: { r: Neighbourho
           <div>
             {r.commuteMin !== null ? (
               <>
-                <p className="text-xs text-muted">Commute to {destinationLabel ?? 'destination'} (estimate)</p>
+                <p className="text-xs text-muted">{r.commuteLegs.length > 1 ? 'Average commute (estimate)' : `Commute to ${r.commuteLegs[0].label} (estimate)`}</p>
                 <p className="text-2xl font-bold text-burgundy">~{r.commuteMin} min</p>
+                <ul className="mt-0.5 text-xs text-muted">
+                  {r.commuteLegs.map((l) => (
+                    <li key={l.label}>{l.label}: ~{l.minutes} min {TRAVEL_MODE_PHRASES[l.mode]}</li>
+                  ))}
+                </ul>
               </>
             ) : (
               <>
@@ -231,10 +242,14 @@ export function ExplorePage() {
 
   const applyMyPreferences = () => {
     if (!prefs) return;
-    const d = prefs.destinations[0];
-    setScoring({ weights: prefs.weights, thresholds: prefs.amenityThresholds, destination: d ? { lat: d.lat, lng: d.lng, label: d.label, address: d.address } : null });
+    setScoring({ weights: prefs.weights, thresholds: prefs.amenityThresholds, destinations: scoringDestinations(prefs.destinations) });
     update({ areas: prefs.preferredAreas, stages: prefs.familyStages });
     toast('Applied your saved family preferences to this search. Your saved values were not changed.', 'success');
+  };
+
+  const setDestinations = (destinations: ScoringDestination[]) => {
+    setPage(1);
+    setScoring((s) => ({ ...s, destinations }));
   };
 
   const fieldErr = (k: string) => error?.fields?.[k];
@@ -429,28 +444,50 @@ export function ExplorePage() {
                 <input id="maxn" type="number" inputMode="numeric" className="input" value={f.maxNearest} onChange={(e) => update({ maxNearest: e.target.value })} aria-invalid={Boolean(fieldErr('maxNearest'))} />
                 <FieldError msg={fieldErr('maxNearest')} />
               </div>
-              <div className="sm:col-span-2">
-                {scoring.destination ? (
+              <div className="min-w-0 sm:col-span-2">
+                {scoring.destinations.length > 0 && (
                   <div>
-                    <p className="label">Commute destination</p>
-                    <div className="flex items-center justify-between gap-2 rounded border border-line px-3 py-2 text-sm">
-                      <span>
-                        <Icon name="work" className="mr-1 !text-[16px] align-[-3px] text-cinnabar" />
-                        <strong>{scoring.destination.label}</strong> {scoring.destination.address && <span className="text-muted">— {scoring.destination.address}</span>}
-                      </span>
-                      <button className="text-xs font-semibold text-cinnabar hover:underline" onClick={() => setScoring((s) => ({ ...s, destination: null }))}>
-                        Change
-                      </button>
-                    </div>
+                    <p className="label">Commute destinations</p>
+                    <ul className="space-y-2">
+                      {scoring.destinations.map((d, i) => (
+                        <li key={`${d.lat},${d.lng}`} className="rounded border border-line px-3 py-2 text-sm">
+                          <p className="truncate" title={d.address}>
+                            <Icon name="work" className="mr-1 !text-[16px] align-[-3px] text-cinnabar" />
+                            <strong>{d.label}</strong> {d.address && <span className="text-muted">— {d.address}</span>}
+                          </p>
+                          <div className="mt-1.5 flex items-center justify-between gap-2">
+                            <label>
+                              <span className="sr-only">Travel mode to {d.label}</span>
+                              <select
+                                className="input !w-auto !py-1"
+                                value={d.mode}
+                                onChange={(e) => setDestinations(scoring.destinations.map((x, j) => (j === i ? { ...x, mode: e.target.value as TravelMode } : x)))}
+                              >
+                                {TRAVEL_MODES.map((m) => (
+                                  <option key={m} value={m}>{TRAVEL_MODE_LABELS[m]}</option>
+                                ))}
+                              </select>
+                            </label>
+                            <button className="text-xs font-semibold text-cinnabar hover:underline" aria-label={`Remove ${d.label} from this search`} onClick={() => setDestinations(scoring.destinations.filter((_, j) => j !== i))}>
+                              Remove
+                            </button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                ) : (
-                  <AddressSearch
-                    label="Commute destination"
-                    onPick={(r) => {
-                      setPage(1);
-                      setScoring((s) => ({ ...s, destination: { lat: r.lat, lng: r.lng, label: r.label.slice(0, 40), address: r.address } }));
-                    }}
-                  />
+                )}
+                {scoring.destinations.length < DESTINATIONS_MAX && (
+                  <div className={scoring.destinations.length ? 'mt-2' : ''}>
+                    <AddressSearch
+                      label={scoring.destinations.length ? 'Add another commute destination' : 'Commute destination'}
+                      onPick={(r) => {
+                        if (scoring.destinations.some((d) => d.lat.toFixed(5) === r.lat.toFixed(5) && d.lng.toFixed(5) === r.lng.toFixed(5)))
+                          return toast('This destination is already in your search.', 'error');
+                        setDestinations([...scoring.destinations, { lat: r.lat, lng: r.lng, label: r.label.slice(0, 40), address: r.address, mode: DEFAULT_TRAVEL_MODE }]);
+                      }}
+                    />
+                  </div>
                 )}
               </div>
               <div>
@@ -533,7 +570,7 @@ export function ExplorePage() {
           )}
           <div className="stagger space-y-4">
             {results.map((r, i) => (
-              <ResultCard key={r.id} r={r} index={i} radius={f.radius} destinationLabel={scoring.destination?.label} />
+              <ResultCard key={r.id} r={r} index={i} radius={f.radius} />
             ))}
           </div>
           {loading && results.length > 0 && <Spinner label="Finding neighbourhoods" />}
@@ -547,7 +584,7 @@ export function ExplorePage() {
               <Limitation>{data.limitation}</Limitation>
               <Limitation>{LIMITATION_EDUCATION}</Limitation>
               <Limitation>
-                Scores use {me ? 'your saved' : 'default'} weights{scoring.destination ? ` and commute estimates to ${scoring.destination.label}` : ''}. Legend: score colour{' '}
+                Scores use {me ? 'your saved' : 'default'} weights{scoring.destinations.length ? ` and commute estimates to ${destinationNames(scoring.destinations)}` : ''}. Legend: score colour{' '}
                 <span className={`font-semibold ${scoreTone(80).text}`}>≥75 strong</span>, <span className={`font-semibold ${scoreTone(60).text}`}>55–74 fair</span>,{' '}
                 <span className={`font-semibold ${scoreTone(40).text}`}>&lt;55 weak</span>.
               </Limitation>

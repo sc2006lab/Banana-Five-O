@@ -115,6 +115,7 @@ model PriorityDestination {
   address   String                  @db.VarChar(300)
   lat       Float
   lng       Float
+  mode      String                  @default("pt") @db.VarChar(8)
   profile   FamilyPreferenceProfile @relation(fields: [profileId], references: [accountId], onDelete: Cascade)
 
   @@unique([profileId, slot])

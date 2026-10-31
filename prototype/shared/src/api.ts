@@ -9,6 +9,21 @@ import type {
   TravelMode,
 } from './domain.js';
 
+/** A place the household commutes to, and how they travel there (FR-PREF-03). */
+export interface CommuteDestination {
+  lat: number;
+  lng: number;
+  label: string;
+  mode: TravelMode;
+}
+
+/** Estimated travel time to one commute destination. */
+export interface CommuteLeg {
+  label: string;
+  mode: TravelMode;
+  minutes: number;
+}
+
 export interface ApiError {
   error: string;
   /** Field-specific correction guidance (NFR-USAB-02). */
@@ -97,7 +112,9 @@ export interface NeighbourhoodSummary {
   score: FamilyScoreDto;
   coverage: number; // categories with >=1 facility within radius
   highlights: { category: AmenityCategory; count: number; nearestM: number | null; state: AvailabilityState }[];
+  /** Average estimated minutes across every commute destination; null when none is set. */
   commuteMin: number | null;
+  commuteLegs: CommuteLeg[];
   nearestSelectedM: number | null;
   origin?: LocationOrigin;
 }
@@ -159,7 +176,7 @@ export interface PreferencesDto {
   amenityThresholds: Partial<Record<AmenityCategory, ProximityRadius>>;
   weights: CriterionWeights;
   confirmedWeights: Criterion[];
-  destinations: { label: string; queryText: string; address: string; lat: number; lng: number }[];
+  destinations: { label: string; queryText: string; address: string; lat: number; lng: number; mode: TravelMode }[];
   updatedAt: string | null;
 }
 

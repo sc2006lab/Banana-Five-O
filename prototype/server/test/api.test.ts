@@ -157,7 +157,17 @@ describe('preferences (UC-2.1)', () => {
     expect(r.body.amenityThresholds).toEqual({ childcare: 500 });
   });
 
+  it('CM-6 saves a travel mode per destination, defaulting to public transport (FR-PREF-03)', async () => {
+    const agent = await register();
+    const work = valid.destinations[0];
+    const destinations = [{ ...work, mode: 'drive' }, { ...work, label: 'School', lat: 1.35, mode: 'walk' }, { ...work, label: 'Gran', lat: 1.36 }];
+    expect((await agent.put('/api/preferences').send({ ...valid, destinations })).status).toBe(200);
+    const r = await agent.get('/api/preferences');
+    expect(r.body.destinations.map((d: any) => [d.label, d.mode])).toEqual([['Work', 'drive'], ['School', 'walk'], ['Gran', 'pt']]);
+  });
+
   it.each([
+    ['CM-7 unknown travel mode', { destinations: [{ ...valid.destinations[0], mode: 'teleport' }] }, 'destinations.0.mode'],
     ['weight -1', { weights: { ...valid.weights, childcare: -1 } }, 'weights.childcare'],
     ['weight 6', { weights: { ...valid.weights, childcare: 6 } }, 'weights.childcare'],
     ['non-integer weight', { weights: { ...valid.weights, childcare: 2.5 } }, 'weights.childcare'],
@@ -202,6 +212,25 @@ describe('discovery and profiles (UC-3.1, UC-4.1)', () => {
     expect(r.body.limitation).toMatch(/not a live property listing/);
   });
 
+  const destinationsQuery = (list: unknown) => `destinations=${encodeURIComponent(JSON.stringify(list))}`;
+  const workTrip = { lat: 1.3, lng: 103.8, label: 'Work', mode: 'pt' };
+
+  it('CM-8 rejects malformed commute destinations with field guidance', async () => {
+    const cases: [string, string][] = [
+      ['sort=commute', 'sort'],
+      ['destinations=not-json', 'destinations'],
+      ['destinations=%7B%7D', 'destinations'],
+      [destinationsQuery([{ ...workTrip, mode: 'teleport' }]), 'destinations'],
+      [destinationsQuery([{ ...workTrip, lat: 9 }]), 'destinations'],
+      [destinationsQuery([workTrip, workTrip, workTrip, workTrip]), 'destinations'],
+    ];
+    for (const [qs, field] of cases) {
+      const r = await request(app).get(`/api/neighbourhoods?${qs}`);
+      expect(r.status, qs).toBe(400);
+      expect(r.body.fields[field], qs).toBeTruthy();
+    }
+  });
+
   it('rejects contradictory criteria with field guidance (FR-DISC-06)', async () => {
     const cases: [string, string][] = [
       ['minCount=-1&category=clinic', 'minCount'],
@@ -209,7 +238,6 @@ describe('discovery and profiles (UC-3.1, UC-4.1)', () => {
       ['maxCommute=30', 'maxCommute'],
       ['maxNearest=1500&radius=1000&category=clinic', 'maxNearest'],
       ['sort=nearest', 'sort'],
-      ['destLat=1.3', 'destLat'],
     ];
     for (const [qs, field] of cases) {
       const r = await request(app).get(`/api/neighbourhoods?${qs}`);
@@ -221,9 +249,20 @@ describe('discovery and profiles (UC-3.1, UC-4.1)', () => {
   it('filters by count and places unavailable values last when sorting', async () => {
     const r = await request(app).get('/api/neighbourhoods?category=childcare&minCount=3&radius=500&pageSize=50');
     expect(r.body.results.every((x: any) => x.highlights.find((h: any) => h.category === 'childcare').count >= 3)).toBe(true);
-    const s = await request(app).get('/api/neighbourhoods?sort=commute&destLat=1.30&destLng=103.80&pageSize=50');
+    const s = await request(app).get(`/api/neighbourhoods?sort=commute&${destinationsQuery([workTrip])}&pageSize=50`);
     const mins = s.body.results.map((x: any) => x.commuteMin);
     expect(mins).toEqual([...mins].sort((a: number, b: number) => a - b));
+  });
+
+  it('CM-9 scores profiles and comparisons against every destination', async () => {
+    const trips = destinationsQuery([workTrip, { lat: 1.41, lng: 103.8, label: 'School', mode: 'drive' }]);
+    const profile = await request(app).get(`/api/neighbourhoods/TVSZ01?${trips}`);
+    const commute = profile.body.score.breakdown.find((b: any) => b.criterion === 'commute');
+    expect(commute.rawLabel).toContain('average');
+    expect(commute.rawLabel).toContain('School');
+    const compare = await request(app).get(`/api/compare?ids=TVSZ01,TVSZ02&${trips}`);
+    expect(compare.status).toBe(200);
+    expect(JSON.stringify(compare.body)).toContain('School');
   });
 
   it('shows category states instead of misleading zeros (FR-NBH-09)', async () => {

@@ -113,6 +113,24 @@ describe('OneMap response contract', () => {
     expect(await searchAddress('738907')).toEqual([expect.objectContaining({ lat: 1.4426, lng: 103.8 })]);
   });
 
+  it('accepts public results served with a token notice when no credentials are configured', async () => {
+    const { config } = await import('../src/config.js');
+    config.onemap = { email: '', password: '', accessToken: '' };
+    fetchMock.mockResolvedValue(json({ error: 'Authentication token missing.', found: 1, results: [school] }));
+    const { searchAddress } = await import('../src/travel/onemap.js');
+    expect(await searchAddress('738907')).toEqual([expect.objectContaining({ lat: 1.4426, lng: 103.8 })]);
+  });
+
+  it('still rejects a token notice when configured credentials should have worked', async () => {
+    const { config } = await import('../src/config.js');
+    config.onemap = { email: '', password: '', accessToken: 'static-fixture' };
+    fetchMock.mockResolvedValue(json({ error: 'Token expired', results: [school] }));
+    const { searchAddress } = await import('../src/travel/onemap.js');
+    const result = expect(searchAddress('738907')).rejects.toThrow('Configure valid OneMap credentials');
+    await vi.runAllTimersAsync();
+    await result;
+  });
+
   it('does not turn an HTTP 200 authentication error into an empty search', async () => {
     const { config } = await import('../src/config.js');
     config.onemap = { email: '', password: '', accessToken: '' };

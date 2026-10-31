@@ -1,7 +1,7 @@
 // Application state via React Context (tech-stack recommendation: no Redux).
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { COMPARE_MAX, DEFAULT_WEIGHTS, type Me, type PreferencesDto } from '@famplan/shared';
-import { api, type ScoringState } from '../lib/api';
+import { api, scoringDestinations, type ScoringState } from '../lib/api';
 
 interface Toast {
   id: number;
@@ -31,7 +31,7 @@ interface AppStateValue {
 
 const Ctx = createContext<AppStateValue | null>(null);
 
-const VISITOR_SCORING: ScoringState = { weights: { ...DEFAULT_WEIGHTS }, thresholds: {}, destination: null };
+const VISITOR_SCORING: ScoringState = { weights: { ...DEFAULT_WEIGHTS }, thresholds: {}, destinations: [] };
 
 export function AppStateProvider({ children }: { children: ReactNode }) {
   const [me, setMeState] = useState<Me | null>(null);
@@ -98,11 +98,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     const p = await api<PreferencesDto>('/preferences');
     if (!mounted.current || identity.current.version !== version) return;
     setPrefs(p);
-    const d = p.destinations[0];
     setScoring({
       weights: p.weights,
       thresholds: p.amenityThresholds,
-      destination: d ? { lat: d.lat, lng: d.lng, label: d.label, address: d.address } : null,
+      destinations: scoringDestinations(p.destinations),
     });
   }, []);
 

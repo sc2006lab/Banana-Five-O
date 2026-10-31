@@ -69,9 +69,12 @@ export async function searchAddress(q: string, limit = 6): Promise<GeocodeResult
       const body = (await res.json()) as { results?: any[]; error?: unknown };
       if (body.error && /token|auth|forbidden/i.test(String(body.error))) {
         if (attempt === 0 && config.onemap.email && config.onemap.password) { await getToken(true); continue; }
-        throw new OneMapAuthenticationError();
+        // Without credentials OneMap still serves public results alongside a "token missing" notice.
+        if (routingConfigured() || !body.results?.length) throw new OneMapAuthenticationError();
+      } else if (body.error) {
+        throw new Error('OneMap search did not return valid results. Configure valid OneMap credentials if authentication is required.');
       }
-      if (body.error || !Array.isArray(body.results))
+      if (!Array.isArray(body.results))
         throw new Error('OneMap search did not return valid results. Configure valid OneMap credentials if authentication is required.');
       markOk();
       const seen = new Set<string>();

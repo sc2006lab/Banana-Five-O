@@ -38,7 +38,7 @@ describe('exact address radius', () => {
   it('keeps default scoring evidence consistent with a 1 km profile rather than an obsolete 400 m rule', async () => {
     index.facilities = [facility('bus stop 600 m away', 600, 'bus_stop')];
     const point = index.atPoint(n, origin);
-    const evidence = index.evidence(point, {}, null);
+    const evidence = index.evidence(point, {}, []);
     const profile = await searchNeighbourhoods(params({ origin, radius: 1000 }));
     expect(evidence.accessibility.value).toBe(1);
     expect(profile.results[0].score.breakdown.find((b) => b.criterion === 'accessibility')?.rawValue).toBe(1);

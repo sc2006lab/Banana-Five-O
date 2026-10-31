@@ -1,7 +1,9 @@
 import {
   CRITERIA,
   type AmenityCategory,
+  type CommuteDestination,
   type CriterionWeights,
+  type PreferencesDto,
   type ProximityRadius,
 } from '@famplan/shared';
 
@@ -43,8 +45,18 @@ export async function api<T>(path: string, init: { method?: string; body?: unkno
 export interface ScoringState {
   weights: CriterionWeights;
   thresholds: Partial<Record<AmenityCategory, ProximityRadius>>;
-  destination: { lat: number; lng: number; label: string; address?: string } | null;
+  destinations: ScoringDestination[];
 }
+
+export type ScoringDestination = CommuteDestination & { address?: string };
+
+/** The saved destinations in the form the scoring context uses. */
+export const scoringDestinations = (saved: PreferencesDto['destinations']): ScoringDestination[] =>
+  saved.map(({ lat, lng, label, address, mode }) => ({ lat, lng, label, address, mode }));
+
+/** "Work", or "Work, School and Gym" when commute time covers several destinations. */
+export const destinationNames = (destinations: ScoringDestination[]): string =>
+  new Intl.ListFormat('en-SG').format(destinations.map((d) => d.label));
 
 /** Encode the active scoring context as query parameters understood by the API. */
 export function scoringParams(s: ScoringState, extra: Record<string, string | number | undefined | null> = {}): URLSearchParams {
@@ -55,10 +67,11 @@ export function scoringParams(s: ScoringState, extra: Record<string, string | nu
     .map(([k, v]) => `${k}:${v}`)
     .join(',');
   if (th) p.set('th', th);
-  if (s.destination) {
-    p.set('destLat', s.destination.lat.toFixed(6));
-    p.set('destLng', s.destination.lng.toFixed(6));
-    p.set('destLabel', s.destination.label.slice(0, 40));
+  if (s.destinations.length) {
+    p.set(
+      'destinations',
+      JSON.stringify(s.destinations.map((d) => ({ lat: Number(d.lat.toFixed(6)), lng: Number(d.lng.toFixed(6)), label: d.label.slice(0, 40), mode: d.mode }))),
+    );
   }
   for (const [k, v] of Object.entries(extra)) if (v !== undefined && v !== null && v !== '') p.set(k, String(v));
   return p;
