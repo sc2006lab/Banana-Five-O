@@ -1,0 +1,152 @@
+// ScoringController (SRS §8.2, §9.5): the deterministic scoring engine. Normalises the eight criterion values,
+// applies the missing-data policy and computes the rounded 0–100 family suitability score.
+// FR-DEC-01 – FR-DEC-03, FR-PREF-05, NFR-DATA-03, NFR-TRANS-01. Rule constants live in the versioned configuration.
+import {
+  CRITERIA,
+  WEIGHT_MAX,
+  WEIGHT_MIN,
+  type Criterion,
+  type CriterionBreakdown,
+  type CriterionWeights,
+  type FamilyScoreDto,
+} from '@famplan/shared';
+import { SCORING_CONFIG, type NormalisationRule, type ScoringConfiguration } from './config.js';
+
+export interface CriterionEvidence {
+  /** Raw value in the rule's unit (count, metres or minutes); null when the criterion lacks sufficient data. */
+  value: number | null;
+  label: string;
+  missingReason?: string;
+}
+
+export type ScoringEvidence = Record<Criterion, CriterionEvidence>;
+
+/** Rejected scoring input. `fields` holds one message per invalid field, in the shape of ApiError.fields. */
+export class ScoringInputError extends Error {
+  readonly fields: Record<string, string>;
+
+  constructor(fields: Record<string, string>) {
+    super(`Invalid scoring input: ${Object.values(fields).join(' ')}`);
+    this.name = 'ScoringInputError';
+    this.fields = fields;
+  }
+}
+
+const STANDARD_TREATMENT = 'Each criterion contributes weight ÷ total weight × normalised value × 100.';
+const NO_DATA_TREATMENT = 'No criterion has sufficient data, so no score can be calculated.';
+const DEFAULT_MISSING_REASON = 'This criterion does not have sufficient data.';
+
+// Absorbs binary floating-point noise, so a true x.5 that computes as x.4999… still rounds upward.
+const ROUNDING_TOLERANCE = 1e-9;
+
+/** Round to the nearest whole number; an exact 0.5 rounds upward (SRS §5.24). */
+export function roundHalfUp(value: number): number {
+  return Math.floor(value + 0.5 + ROUNDING_TOLERANCE);
+}
+
+const clampUnit = (value: number) => Math.min(1, Math.max(0, value));
+
+/** Map a validated raw value to 0..1 using the criterion's rule, linear between its end points. */
+export function normalise(rule: NormalisationRule, value: number): number {
+  switch (rule.kind) {
+    case 'count':
+      return clampUnit(value / rule.target);
+    case 'nearest':
+      return clampUnit((rule.worstM - value) / (rule.worstM - rule.bestM));
+    case 'minutes':
+      return clampUnit((rule.worstMin - value) / (rule.worstMin - rule.bestMin));
+  }
+}
+
+/** Every invalid field at once, so callers can give field-specific guidance (FR-DISC-06). */
+function findInputProblems(
+  evidence: ScoringEvidence,
+  weights: CriterionWeights,
+  config: ScoringConfiguration,
+): Record<string, string> {
+  const problems: Record<string, string> = {};
+  for (const c of CRITERIA) {
+    const weight = weights[c];
+    if (!Number.isInteger(weight) || weight < WEIGHT_MIN || weight > WEIGHT_MAX) {
+      problems[`weights.${c}`] = `Weight for ${c} must be a whole number from ${WEIGHT_MIN} to ${WEIGHT_MAX}.`;
+    }
+
+    const value = evidence[c]?.value;
+    if (value === null) continue;
+    if (!Number.isFinite(value) || value < 0) {
+      problems[`evidence.${c}`] = `Evidence for ${c} must be a number that is not negative, or null when missing.`;
+    } else if (config.criteria[c].kind === 'count' && !Number.isInteger(value)) {
+      problems[`evidence.${c}`] = `Evidence for ${c} must be a whole number of facilities.`;
+    }
+  }
+  return problems;
+}
+
+function describeWeightTreatment(
+  evidence: ScoringEvidence,
+  weights: CriterionWeights,
+  availableCount: number,
+  totalWeight: number,
+  config: ScoringConfiguration,
+): string {
+  if (availableCount === 0) return NO_DATA_TREATMENT;
+  if (totalWeight === 0) return config.allZeroFallback;
+  const weightRedistributed = CRITERIA.some((c) => evidence[c].value === null && weights[c] > 0);
+  return weightRedistributed ? config.missingDataTreatment : STANDARD_TREATMENT;
+}
+
+/**
+ * Calculate the family suitability score. Identical evidence, weights, configuration version and dataset versions
+ * always give the same result (NFR-DATA-03); only `computedAt` depends on `now`.
+ * @throws ScoringInputError listing every invalid weight and evidence value.
+ */
+export function calculateScore(
+  evidence: ScoringEvidence,
+  weights: CriterionWeights,
+  datasetVersions: Record<string, number>,
+  config: ScoringConfiguration = SCORING_CONFIG,
+  now: Date = new Date(),
+): FamilyScoreDto {
+  const problems = findInputProblems(evidence, weights, config);
+  if (Object.keys(problems).length > 0) throw new ScoringInputError(problems);
+
+  const available = CRITERIA.filter((c) => evidence[c].value !== null);
+  const totalWeight = available.reduce((sum, c) => sum + weights[c], 0);
+  // Fraction of the score a criterion controls; every available criterion counts equally if all weights are 0.
+  const shareOf = (c: Criterion) => (totalWeight === 0 ? 1 / available.length : weights[c] / totalWeight);
+
+  const breakdown = CRITERIA.map((c): CriterionBreakdown => {
+    const { value, label, missingReason } = evidence[c];
+    const rule = config.criteria[c];
+    const shared = { criterion: c, rawValue: value, rawLabel: label, weight: weights[c], rule: rule.description };
+    if (value === null) {
+      return {
+        ...shared,
+        normalisedValue: null,
+        effectiveWeight: 0,
+        contribution: 0,
+        missing: true,
+        missingReason: missingReason ?? DEFAULT_MISSING_REASON,
+      };
+    }
+    const normalisedValue = normalise(rule, value);
+    return {
+      ...shared,
+      normalisedValue,
+      effectiveWeight: shareOf(c) * 100,
+      contribution: shareOf(c) * normalisedValue * 100,
+      missing: false,
+    };
+  });
+
+  const unroundedTotal = breakdown.reduce((sum, b) => sum + b.contribution, 0);
+  return {
+    total: roundHalfUp(unroundedTotal),
+    unroundedTotal,
+    configurationVersion: config.version,
+    datasetVersions,
+    breakdown,
+    weightTreatment: describeWeightTreatment(evidence, weights, available.length, totalWeight, config),
+    computedAt: now.toISOString(),
+  };
+}
