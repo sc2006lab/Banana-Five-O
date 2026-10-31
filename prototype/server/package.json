@@ -8,6 +8,7 @@
     "start": "NODE_ENV=production tsx --env-file-if-exists=../.env src/index.ts",
     "seed": "tsx --env-file=../.env src/scripts/seed.ts",
     "sync": "tsx --env-file=../.env src/scripts/sync.ts",
+    "loadtest": "tsx src/scripts/loadtest.ts",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage"
   },

@@ -4,8 +4,11 @@ import {
   AMENITY_CATEGORIES,
   CRITERIA,
   STALE_AFTER_DAYS,
+  TRAVEL_MODE_PHRASES,
   type AmenityCategory,
   type AvailabilityState,
+  type CommuteDestination,
+  type CommuteLeg,
   type Criterion,
   type ProximityRadius,
   type Provenance,
@@ -136,17 +139,21 @@ export class NeighbourhoodIndex {
   evidence(
     n: IndexedNeighbourhood,
     thresholds: Partial<Record<AmenityCategory, ProximityRadius>>,
-    destination: { lat: number; lng: number; label: string } | null,
+    destinations: CommuteDestination[],
   ): ScoringEvidence {
     const out = {} as ScoringEvidence;
     for (const c of CRITERIA as readonly Criterion[]) {
       const rule = SCORING_CONFIG.criteria[c];
       if (rule.kind === 'minutes') {
-        if (!destination) {
+        const legs = this.commuteLegs(n, destinations);
+        const average = this.commuteMinutes(n, destinations);
+        if (average === null) {
           out[c] = { value: null, label: 'No priority destination set', missingReason: 'Add a priority destination to include commute time.' };
+        } else if (legs.length === 1) {
+          out[c] = { value: average, label: `~${average} min ${TRAVEL_MODE_PHRASES[legs[0].mode]} to ${legs[0].label} (estimate)` };
         } else {
-          const min = estimateMinutes(distanceM(n, destination), 'pt');
-          out[c] = { value: min, label: `~${min} min to ${destination.label} (estimate)` };
+          const each = legs.map((l) => `${l.label} ${l.minutes} min ${TRAVEL_MODE_PHRASES[l.mode]}`).join('; ');
+          out[c] = { value: average, label: `~${average} min average (estimate): ${each}` };
         }
         continue;
       }
@@ -169,8 +176,15 @@ export class NeighbourhoodIndex {
     return out;
   }
 
-  commuteMinutes(n: IndexedNeighbourhood, dest: { lat: number; lng: number } | null): number | null {
-    return dest ? estimateMinutes(distanceM(n, dest), 'pt') : null;
+  commuteLegs(n: IndexedNeighbourhood, destinations: CommuteDestination[]): CommuteLeg[] {
+    return destinations.map((d) => ({ label: d.label, mode: d.mode, minutes: estimateMinutes(distanceM(n, d), d.mode) }));
+  }
+
+  /** Average estimated minutes across every destination, so each one affects ranking equally (FR-PREF-03). */
+  commuteMinutes(n: IndexedNeighbourhood, destinations: CommuteDestination[]): number | null {
+    if (!destinations.length) return null;
+    const legs = this.commuteLegs(n, destinations);
+    return Math.round(legs.reduce((sum, l) => sum + l.minutes, 0) / legs.length);
   }
 }
 

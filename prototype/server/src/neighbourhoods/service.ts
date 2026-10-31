@@ -9,6 +9,7 @@ import {
   STAGE_CATEGORIES,
   type AmenityCategory,
   type AmenitySummaryDto,
+  type CommuteDestination,
   type CriterionWeights,
   type FacilityDto,
   type FamilyStage,
@@ -28,7 +29,7 @@ import { index, type IndexedNeighbourhood } from './store.js';
 export interface ScoringContext {
   weights: CriterionWeights;
   thresholds: Partial<Record<AmenityCategory, ProximityRadius>>;
-  destination: { lat: number; lng: number; label: string } | null;
+  destinations: CommuteDestination[];
   radius: ProximityRadius;
   origin?: LocationOrigin;
 }
@@ -40,10 +41,7 @@ export function scoringContext(q: Record<string, unknown>): ScoringContext {
   return {
     weights,
     thresholds: (q.th as ScoringContext['thresholds']) ?? {},
-    destination:
-      typeof q.destLat === 'number' && typeof q.destLng === 'number'
-        ? { lat: q.destLat, lng: q.destLng, label: (q.destLabel as string) || 'destination' }
-        : null,
+    destinations: (q.destinations as CommuteDestination[] | undefined) ?? [],
     radius: ((q.radius as number) ?? 1000) as ProximityRadius,
     origin: typeof q.originLat === 'number' && typeof q.originLng === 'number'
       ? { lat: q.originLat, lng: q.originLng, address: String(q.originAddress), postal: (q.originPostal as string) || null }
@@ -52,7 +50,7 @@ export function scoringContext(q: Record<string, unknown>): ScoringContext {
 }
 
 export function summarise(n: IndexedNeighbourhood, ctx: ScoringContext, category?: AmenityCategory): NeighbourhoodSummary {
-  const score = calculateScore(index.evidence(n, scoreThresholds(ctx), ctx.destination), ctx.weights, index.datasetVersions());
+  const score = calculateScore(index.evidence(n, scoreThresholds(ctx), ctx.destinations), ctx.weights, index.datasetVersions());
   const highlights = amenitySummaries(n, ctx.radius).map((a) => ({
     category: a.category,
     count: a.matchedCount,
@@ -69,7 +67,8 @@ export function summarise(n: IndexedNeighbourhood, ctx: ScoringContext, category
     score,
     coverage: highlights.filter((h) => h.count > 0).length,
     highlights,
-    commuteMin: index.commuteMinutes(n, ctx.destination),
+    commuteMin: index.commuteMinutes(n, ctx.destinations),
+    commuteLegs: index.commuteLegs(n, ctx.destinations),
     nearestSelectedM: category && index.categoryState(category).state !== 'UNAVAILABLE' && n.nearest[category] ? Math.round(n.nearest[category]!.d) : null,
     origin: ctx.origin,
   };
@@ -192,7 +191,7 @@ export async function searchNeighbourhoods(p: SearchParams): Promise<SearchRespo
   }
   if (p.category && p.minCount !== undefined) pool = pool.filter((n) => index.countWithin(n, [p.category!], p.radius) >= p.minCount!);
   if (p.category && p.maxNearest !== undefined) pool = pool.filter((n) => (n.nearest[p.category!]?.d ?? Infinity) <= p.maxNearest!);
-  if (p.maxCommute !== undefined) pool = pool.filter((n) => (index.commuteMinutes(n, p.destination) ?? Infinity) <= p.maxCommute!);
+  if (p.maxCommute !== undefined) pool = pool.filter((n) => (index.commuteMinutes(n, p.destinations) ?? Infinity) <= p.maxCommute!);
 
   let results = pool.map((n) => summarise(n, ctx, p.category));
   if (matchedBy !== 'address' || p.sort !== 'score' || p.order) {
@@ -278,7 +277,7 @@ export function neighbourhoodDetail(n: IndexedNeighbourhood, ctx: ScoringContext
     boundary: n.boundary,
     radius: ctx.radius,
     amenities: amenitySummaries(n, ctx.radius),
-    score: calculateScore(index.evidence(n, scoreThresholds(ctx), ctx.destination), ctx.weights, index.datasetVersions()),
+    score: calculateScore(index.evidence(n, scoreThresholds(ctx), ctx.destinations), ctx.weights, index.datasetVersions()),
     provenance: boundarySource ? [boundarySource.provenance] : [],
     limitations: [ctx.origin ? 'Distances and amenity counts use the selected address, not the neighbourhood reference point.' : LIMITATION_PROFILE, LIMITATION_EDUCATION, LIMITATION_SCORE],
     origin: ctx.origin,

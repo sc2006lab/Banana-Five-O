@@ -93,11 +93,13 @@ describe('nameMatches() and levenshtein()', () => {
 });
 
 describe('scoringContext()', () => {
-  it('uses supplied thresholds, labels an unnamed destination and defaults the radius to 1 km', () => {
-    const ctx = scoringContext({ th: { childcare: 500 }, destLat: 1.3, destLng: 103.8 });
+  it('uses supplied thresholds and destinations, and defaults the radius to 1 km', () => {
+    const work = { lat: 1.3, lng: 103.8, label: 'Work', mode: 'drive' };
+    const ctx = scoringContext({ th: { childcare: 500 }, destinations: [work] });
     expect(ctx.thresholds).toEqual({ childcare: 500 });
-    expect(ctx.destination).toEqual({ lat: 1.3, lng: 103.8, label: 'destination' });
+    expect(ctx.destinations).toEqual([work]);
     expect(ctx.radius).toBe(1000);
+    expect(scoringContext({}).destinations).toEqual([]);
   });
 });
 
@@ -172,9 +174,61 @@ describe('searchNeighbourhoods(): filters (FR-DISC-02)', () => {
   });
 
   it('applies the commute-time threshold to the chosen destination', async () => {
-    const dest = { destination: { lat: 1.3, lng: 103.8, label: 'Work' } };
+    const dest = { destinations: [{ lat: 1.3, lng: 103.8, label: 'Work', mode: 'pt' as const }] };
     expect(await ids({ ...dest, maxCommute: 10 })).toEqual(zones(1)); // next zone is about 12 minutes away
     expect(await ids({ maxCommute: 10 })).toEqual([]); // no destination, so no commute time
+  });
+});
+
+describe('commute across every destination, each by its own travel mode (FR-PREF-03)', () => {
+  const work = { lat: 1.3, lng: 103.8, label: 'Work', mode: 'pt' as const };
+  const school = { lat: 1.41, lng: 103.8, label: 'School', mode: 'pt' as const };
+  const gym = { lat: 1.4, lng: 103.8, label: 'Gym', mode: 'pt' as const };
+  const commuteOf = (r: { score: { breakdown: { criterion: string; rawLabel: string; rawValue: number | null; contribution: number }[] } }) =>
+    r.score.breakdown.find((b) => b.criterion === 'commute')!;
+
+  it('CM-1 moves the commute ranking when another destination is added', async () => {
+    expect((await ids({ destinations: [work], sort: 'commute' }))[0]).toBe('TVSZ01');
+    // TVSZ11 (lat 1.40) has the shortest average trip to all three destinations.
+    expect((await ids({ destinations: [work, school, gym], sort: 'commute' }))[0]).toBe('TVSZ11');
+  });
+
+  it('CM-2 moves the score ranking when another destination is added', async () => {
+    const commuteOnly = { weights: { childcare: 0, schools: 0, groceries: 0, healthcare: 0, green_spaces: 0, public_transport: 0, commute: 5, accessibility: 0 } };
+    expect((await ids({ ...commuteOnly, destinations: [work] }))[0]).toBe('TVSZ01');
+    expect((await ids({ ...commuteOnly, destinations: [work, school, gym] }))[0]).toBe('TVSZ11');
+  });
+
+  it('CM-3 reports each trip and averages them', async () => {
+    const r = await searchNeighbourhoods(params({ q: 'Test Zone 1', destinations: [work, { ...school, mode: 'drive' }], pageSize: 50 }));
+    const zone = r.results.find((x) => x.id === 'TVSZ01')!;
+    expect(zone.commuteLegs.map((l) => [l.label, l.mode])).toEqual([['Work', 'pt'], ['School', 'drive']]);
+    expect(zone.commuteMin).toBe(Math.round((zone.commuteLegs[0].minutes + zone.commuteLegs[1].minutes) / 2));
+    expect(commuteOf(zone).rawValue).toBe(zone.commuteMin);
+    expect(commuteOf(zone).rawLabel).toContain('average');
+    expect(commuteOf(zone).rawLabel).toContain('School');
+    expect(commuteOf(zone).rawLabel).toContain('by car');
+  });
+
+  it('CM-4 changes the commute time and score with the saved travel mode', async () => {
+    const zoneWith = async (mode: 'pt' | 'drive' | 'walk' | 'cycle') =>
+      (await searchNeighbourhoods(params({ destinations: [{ ...work, mode }], pageSize: 50 }))).results.find((x) => x.id === 'TVSZ06')!;
+    const [pt, drive, walk, cycle] = [await zoneWith('pt'), await zoneWith('drive'), await zoneWith('walk'), await zoneWith('cycle')];
+    expect(drive.commuteMin!).toBeLessThan(pt.commuteMin!);
+    expect(cycle.commuteMin!).toBeGreaterThan(pt.commuteMin!);
+    expect(walk.commuteMin!).toBeGreaterThan(cycle.commuteMin!);
+    expect(commuteOf(drive).contribution).toBeGreaterThan(commuteOf(walk).contribution);
+    expect(commuteOf(drive).rawLabel).toContain('by car to Work');
+    expect(commuteOf(walk).rawLabel).toContain('on foot to Work');
+  });
+
+  it('CM-5 applies the commute-time threshold to the average', async () => {
+    // Every TVSZ zone lies on the line between Work and School, so each averages about 28 minutes.
+    const both = { destinations: [work, school] };
+    expect(await ids({ ...both, maxCommute: 20 })).toEqual([]);
+    const within = await ids({ ...both, maxCommute: 35 });
+    expect(within).toHaveLength(12);
+    expect(within).not.toContain('LVSZ01');
   });
 });
 
@@ -189,7 +243,7 @@ describe('searchNeighbourhoods(): sorting and pagination (FR-DISC-05)', () => {
   });
 
   it('sorts by commute time ascending by default', async () => {
-    const r = await ids({ destination: { lat: 1.41, lng: 103.8, label: 'Work' }, sort: 'commute' });
+    const r = await ids({ destinations: [{ lat: 1.41, lng: 103.8, label: 'Work', mode: 'pt' }], sort: 'commute' });
     expect(r.slice(0, 3)).toEqual(zones(12, 11, 10));
   });
 

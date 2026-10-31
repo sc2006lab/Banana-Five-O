@@ -9,13 +9,14 @@ import {
   LIMITATION_SCORE,
   NOTE_MAX,
   PROXIMITY_RADII,
+  TRAVEL_MODE_PHRASES,
   type AmenityCategory,
   type NeighbourhoodDetail,
   type NeighbourhoodSummary,
   type ProximityRadius,
   type ShortlistEntryDto,
 } from '@famplan/shared';
-import { api, ApiError, fmtDistance, scoringParams } from '../lib/api';
+import { api, ApiError, destinationNames, fmtDistance, scoringParams } from '../lib/api';
 import { useApp } from '../state/AppState';
 import { ScoreBreakdown } from '../components/ScoreBreakdown';
 import { Icon, Limitation, Notice, ScorePill, Spinner, StateBadge } from '../components/ui';
@@ -150,7 +151,7 @@ export function ComparePage() {
           <h1 className="text-4xl font-bold tracking-tight text-burgundy">Compare neighbourhoods</h1>
           <p className="mt-2 max-w-2xl text-muted">
             Evaluating {ids.length} choices with {me ? 'your saved priorities' : 'default weights'}
-            {scoring.destination ? ` and estimated commute to ${scoring.destination.label}` : ''}.
+            {scoring.destinations.length ? ` and estimated commute to ${destinationNames(scoring.destinations)}` : ''}.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -268,11 +269,15 @@ export function ComparePage() {
                   </div>
                 );
               }} />
-              <Row icon="commute" label={`Commute${scoring.destination ? ` (${scoring.destination.label})` : ''}`} items={items} shade render={(i) =>
+              <Row icon="commute" label={scoring.destinations.length > 1 ? 'Commute (average)' : 'Commute'} items={items} shade render={(i) =>
                 i.commuteMin !== null ? (
                   <div>
                     <p className="text-2xl font-semibold text-burgundy">~{i.commuteMin} min</p>
-                    <p className="text-xs text-muted">Public transport estimate</p>
+                    <ul className="mt-1 space-y-0.5 text-xs text-muted">
+                      {i.commuteLegs.map((l) => (
+                        <li key={l.label}>{l.label}: ~{l.minutes} min {TRAVEL_MODE_PHRASES[l.mode]}</li>
+                      ))}
+                    </ul>
                   </div>
                 ) : (
                   <p className="text-xs text-muted">Add a priority destination in Preferences to compare commute.</p>

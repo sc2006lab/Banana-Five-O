@@ -14,7 +14,7 @@ import {
   type NeighbourhoodDetail,
   type ProximityRadius,
 } from '@famplan/shared';
-import { api, ApiError, fmtDistance, scoringParams } from '../lib/api';
+import { api, ApiError, destinationNames, fmtDistance, scoringParams } from '../lib/api';
 import { useApp } from '../state/AppState';
 import { CategoryLegend, CATEGORY_COLORS, OneMapTiles, SG_BOUNDS, categoryIcon, homeIcon } from '../components/map';
 import { ScoreBreakdown } from '../components/ScoreBreakdown';
@@ -280,7 +280,7 @@ export function ProfilePage() {
           ) : (
             <div role="tabpanel" className="mt-4">
               <p className="mb-3 text-sm text-muted">
-                Using {me ? 'your saved' : 'default'} weights{scoring.destination ? ` and commute to ${scoring.destination.label}` : ''}.{' '}
+                Using {me ? 'your saved' : 'default'} weights{scoring.destinations.length ? ` and commute to ${destinationNames(scoring.destinations)}` : ''}.{' '}
                 <Link to="/preferences" className="font-semibold text-cinnabar hover:underline">
                   Edit priorities
                 </Link>

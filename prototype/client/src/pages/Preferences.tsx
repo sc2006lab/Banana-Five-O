@@ -8,18 +8,22 @@ import {
   CRITERIA,
   CRITERION_ICONS,
   CRITERION_LABELS,
+  DEFAULT_TRAVEL_MODE,
   DESTINATIONS_MAX,
   FAMILY_STAGES,
   FAMILY_STAGE_LABELS,
   PROXIMITY_RADII,
+  TRAVEL_MODES,
+  TRAVEL_MODE_LABELS,
   preferencesSchema,
   type AreaDto,
   type Criterion,
   type CriterionWeights,
   type PreferencesDto,
   type ProximityRadius,
+  type TravelMode,
 } from '@famplan/shared';
-import { api, ApiError, fmtDate } from '../lib/api';
+import { api, ApiError, fmtDate, scoringDestinations } from '../lib/api';
 import { useApp } from '../state/AppState';
 import { AddressSearch } from '../components/AddressSearch';
 import { FieldError, Icon, Notice, Spinner } from '../components/ui';
@@ -52,9 +56,7 @@ export function PreferencesPage() {
             amenityThresholds: scoring.thresholds,
             weights: scoring.weights,
             confirmedWeights: [],
-            destinations: scoring.destination
-              ? [{ label: scoring.destination.label, queryText: scoring.destination.label, address: scoring.destination.address ?? '', lat: scoring.destination.lat, lng: scoring.destination.lng }]
-              : [],
+            destinations: scoring.destinations.map((d) => ({ label: d.label, queryText: d.label, address: d.address ?? '', lat: d.lat, lng: d.lng, mode: d.mode })),
           },
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -95,8 +97,7 @@ export function PreferencesPage() {
   };
 
   const applyToSession = () => {
-    const d = draft.destinations[0];
-    setScoring({ weights: draft.weights, thresholds: draft.amenityThresholds, destination: d ? { lat: d.lat, lng: d.lng, label: d.label, address: d.address } : null });
+    setScoring({ weights: draft.weights, thresholds: draft.amenityThresholds, destinations: scoringDestinations(draft.destinations) });
   };
 
   const save = async () => {
@@ -200,16 +201,29 @@ export function PreferencesPage() {
               </h2>
               <span className="text-xs text-muted">{draft.destinations.length}/{DESTINATIONS_MAX}</span>
             </div>
+            <p className="mt-1 text-xs text-muted">The commute score averages your travel time to every destination, using the travel mode you choose for each.</p>
             <ul className="mt-3 divide-y divide-line-soft">
               {draft.destinations.map((d, i) => (
-                <li key={`${d.lat},${d.lng}`} className="flex items-center gap-3 py-2">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-peach text-burgundy">
+                <li key={`${d.lat},${d.lng}`} className="flex items-start gap-3 py-2">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-peach text-burgundy">
                     <Icon name={i === 0 ? 'work' : 'place'} className="!text-[18px]" />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block font-semibold text-ink">{d.label}{i === 0 && <span className="ml-2 text-[11px] font-normal text-muted">used for commute score</span>}</span>
+                    <span className="block font-semibold text-ink">{d.label}</span>
                     <span className="block truncate text-xs text-muted">{d.address}</span>
-                    <FieldError msg={err(`destinations.${i}.queryText`) ?? err(`destinations.${i}.label`)} />
+                    <label className="mt-1.5 block">
+                      <span className="sr-only">Travel mode to {d.label}</span>
+                      <select
+                        className="input !py-1"
+                        value={d.mode}
+                        onChange={(e) => set({ destinations: draft.destinations.map((x, j) => (j === i ? { ...x, mode: e.target.value as TravelMode } : x)) })}
+                      >
+                        {TRAVEL_MODES.map((m) => (
+                          <option key={m} value={m}>{TRAVEL_MODE_LABELS[m]}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <FieldError msg={err(`destinations.${i}.queryText`) ?? err(`destinations.${i}.label`) ?? err(`destinations.${i}.mode`)} />
                   </span>
                   <button className="rounded p-1 text-muted hover:text-cinnabar" aria-label={`Remove ${d.label}`} onClick={() => set({ destinations: draft.destinations.filter((_, j) => j !== i) })}>
                     <Icon name="delete" />
@@ -230,7 +244,7 @@ export function PreferencesPage() {
                     const label = (newDestLabel.trim() || r.label).slice(0, 40);
                     if (draft.destinations.some((d) => d.lat.toFixed(5) === r.lat.toFixed(5) && d.lng.toFixed(5) === r.lng.toFixed(5)))
                       return toast('This destination is already saved.', 'error');
-                    set({ destinations: [...draft.destinations, { label, queryText: r.query, address: r.address, lat: r.lat, lng: r.lng }] });
+                    set({ destinations: [...draft.destinations, { label, queryText: r.query, address: r.address, lat: r.lat, lng: r.lng, mode: DEFAULT_TRAVEL_MODE }] });
                     setNewDestLabel('');
                   }}
                 />

@@ -127,11 +127,18 @@ export const LOCKOUT_MINUTES = 15;
 
 export const TRAVEL_MODES = ['pt', 'walk', 'drive', 'cycle'] as const;
 export type TravelMode = (typeof TRAVEL_MODES)[number];
+export const DEFAULT_TRAVEL_MODE: TravelMode = 'pt';
 export const TRAVEL_MODE_LABELS: Record<TravelMode, string> = {
-  pt: 'Transit',
+  pt: 'Public transport',
   walk: 'Walk',
-  drive: 'Drive',
+  drive: 'Car',
   cycle: 'Cycle',
+};
+export const TRAVEL_MODE_PHRASES: Record<TravelMode, string> = {
+  pt: 'by public transport',
+  walk: 'on foot',
+  drive: 'by car',
+  cycle: 'by bicycle',
 };
 
 export const SORT_OPTIONS = ['score', 'nearest', 'commute', 'coverage'] as const;

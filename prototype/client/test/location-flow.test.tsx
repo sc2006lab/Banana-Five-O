@@ -19,12 +19,12 @@ vi.mock('react-leaflet', () => ({
   Popup: ({children}: {children: React.ReactNode}) => <span>{children}</span>,
   GeoJSON: () => null, TileLayer: () => null, useMap: () => map,
 }));
-const scoring = { weights: DEFAULT_WEIGHTS, thresholds: {}, destination: null };
+const scoring = { weights: DEFAULT_WEIGHTS, thresholds: {}, destinations: [] };
 vi.mock('../src/state/AppState', () => ({ useApp: () => ({ scoring, prefs: null, me: null, setScoring: vi.fn(), compareIds: [], shortlistIds: new Set(), toggleCompare: vi.fn(), toggleShortlist: vi.fn(), toast: vi.fn() }) }));
 vi.mock('../src/components/Rosette', () => ({ Rosette: () => null }));
 vi.mock('../src/lib/motion', () => ({ useTweened: (value: number) => value }));
 const place: GeocodeResult = { address: '12 Example Road Singapore 012345', label: 'Example House', postal: '012345', lat: 1.32, lng: 103.82 };
-const summary = { id: 'TESZ01', name: 'Example Estate', planningArea: 'Example Town', region: 'Central Region', lat: place.lat, lng: place.lng, score: { total: 50, breakdown: [] }, highlights: AMENITY_CATEGORIES.map((category) => ({ category, count: 0, nearestM: null, state: 'NO_MATCH' })), commuteMin: null, nearestSelectedM: null, origin: place };
+const summary = { id: 'TESZ01', name: 'Example Estate', planningArea: 'Example Town', region: 'Central Region', lat: place.lat, lng: place.lng, score: { total: 50, breakdown: [] }, highlights: AMENITY_CATEGORIES.map((category) => ({ category, count: 0, nearestM: null, state: 'NO_MATCH' })), commuteMin: null, commuteLegs: [], nearestSelectedM: null, origin: place };
 const response = { matchedBy: 'address', total: 1, page: 1, pageSize: 12, radius: 1000, results: [summary], addressMatch: { ...place, neighbourhoodId: summary.id }, limitation: 'Selected address.' };
 
 beforeEach(() => { vi.clearAllMocks(); vi.mocked(api).mockResolvedValue([]); Element.prototype.scrollIntoView = vi.fn(); });

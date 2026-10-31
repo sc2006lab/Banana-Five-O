@@ -10,6 +10,7 @@ import {
   type Criterion,
   type CriterionWeights,
   type PreferencesDto,
+  type TravelMode,
 } from '@famplan/shared';
 import type { FamilyPreferenceProfile, PriorityDestination } from '@prisma/client';
 import { prisma } from '../db.js';
@@ -48,7 +49,7 @@ export function toDto(p: (FamilyPreferenceProfile & { destinations: PriorityDest
     confirmedWeights: p.confirmedWeights as Criterion[],
     destinations: [...p.destinations]
       .sort((a, b) => a.slot - b.slot)
-      .map((d) => ({ label: d.label, queryText: d.queryText, address: d.address, lat: d.lat, lng: d.lng })),
+      .map((d) => ({ label: d.label, queryText: d.queryText, address: d.address, lat: d.lat, lng: d.lng, mode: d.mode as TravelMode })),
     updatedAt: p.updatedAt.toISOString(),
   };
 }

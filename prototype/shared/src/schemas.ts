@@ -3,6 +3,7 @@ import { z } from 'zod';
 import {
   AMENITY_CATEGORIES,
   CRITERIA,
+  DEFAULT_TRAVEL_MODE,
   DESTINATIONS_MAX,
   FAMILY_STAGES,
   NOTE_MAX,
@@ -82,6 +83,7 @@ export const destinationSchema = z.object({
   address: z.string().trim().max(300),
   lat,
   lng,
+  mode: z.enum(TRAVEL_MODES, 'Travel mode must be one of: pt, walk, drive, cycle.').default(DEFAULT_TRAVEL_MODE),
 });
 
 export const preferencesSchema = z
@@ -151,7 +153,37 @@ const optionalCoord = (min: number, max: number, msg: string) =>
       return n;
     });
 
-const destLabel = z.string().trim().max(40, 'Destination label must be at most 40 characters.').optional();
+const commuteDestinationsSchema = z
+  .array(
+    z.object({
+      lat,
+      lng,
+      label: z.string().trim().min(1, 'Each destination needs a label.').max(40, 'Destination label must be at most 40 characters.'),
+      mode: z.enum(TRAVEL_MODES, 'Travel mode must be one of: pt, walk, drive, cycle.'),
+    }),
+  )
+  .max(DESTINATIONS_MAX, `Use at most ${DESTINATIONS_MAX} commute destinations.`);
+
+/** Commute destinations as a JSON list so each keeps its own label and travel mode (FR-PREF-03). */
+const destinationsParam = z
+  .string()
+  .optional()
+  .transform((s, ctx) => {
+    if (!s) return [];
+    let value: unknown;
+    try {
+      value = JSON.parse(s);
+    } catch {
+      ctx.addIssue({ code: 'custom', message: 'Commute destinations must be a valid list.' });
+      return z.NEVER;
+    }
+    const parsed = commuteDestinationsSchema.safeParse(value);
+    if (!parsed.success) {
+      ctx.addIssue({ code: 'custom', message: parsed.error.issues[0].message });
+      return z.NEVER;
+    }
+    return parsed.data;
+  });
 
 const originFields = {
   originLat: optionalCoord(1.15, 1.48, 'Search latitude is outside Singapore.'),
@@ -198,9 +230,7 @@ export const searchQuerySchema = z
     maxNearest: optionalInt('Maximum nearest distance must be a whole number of metres.'),
     radius: optionalInt('Radius must be 500, 1000 or 2000.'),
     maxCommute: optionalInt('Commute threshold must be a whole number of minutes.'),
-    destLat: optionalCoord(1.1, 1.5, 'Destination latitude is outside Singapore.'),
-    destLng: optionalCoord(103.5, 104.2, 'Destination longitude is outside Singapore.'),
-    destLabel: destLabel,
+    destinations: destinationsParam,
     th: thresholdsParam,
     sort: z.enum(SORT_OPTIONS, 'Sort must be score, nearest, commute or coverage.').optional().default('score'),
     order: z.enum(['asc', 'desc'], 'Order must be asc or desc.').optional(),
@@ -228,13 +258,11 @@ export const searchQuerySchema = z
       });
     if (q.maxCommute !== undefined && (q.maxCommute < 5 || q.maxCommute > 180))
       ctx.addIssue({ code: 'custom', path: ['maxCommute'], message: 'Commute threshold must be between 5 and 180 minutes.' });
-    if (q.maxCommute !== undefined && (q.destLat === undefined || q.destLng === undefined))
+    if (q.maxCommute !== undefined && !q.destinations?.length)
       ctx.addIssue({ code: 'custom', path: ['maxCommute'], message: 'Add a priority destination before filtering by commute time.' });
-    if ((q.destLat === undefined) !== (q.destLng === undefined))
-      ctx.addIssue({ code: 'custom', path: ['destLat'], message: 'Destination needs both latitude and longitude.' });
     if (q.sort === 'nearest' && !q.category)
       ctx.addIssue({ code: 'custom', path: ['sort'], message: 'Choose an amenity category to sort by nearest amenity.' });
-    if (q.sort === 'commute' && q.destLat === undefined)
+    if (q.sort === 'commute' && !q.destinations?.length)
       ctx.addIssue({ code: 'custom', path: ['sort'], message: 'Add a priority destination to sort by commute time.' });
     if (q.page !== undefined && q.page < 1) ctx.addIssue({ code: 'custom', path: ['page'], message: 'Page must be 1 or more.' });
     if (q.pageSize !== undefined && (q.pageSize < 1 || q.pageSize > 50))
@@ -295,9 +323,7 @@ export const historyQuerySchema = z.object({
 export const scoringParamsSchema = z
   .object({
     radius: optionalInt('Radius must be 500, 1000 or 2000.'),
-    destLat: optionalCoord(1.1, 1.5, 'Destination latitude is outside Singapore.'),
-    destLng: optionalCoord(103.5, 104.2, 'Destination longitude is outside Singapore.'),
-    destLabel: destLabel,
+    destinations: destinationsParam,
     th: thresholdsParam,
     ...weightParams,
     ...originFields,
@@ -306,8 +332,6 @@ export const scoringParamsSchema = z
     validateOrigin(q, ctx);
     if (q.radius !== undefined && !(PROXIMITY_RADII as readonly number[]).includes(q.radius))
       ctx.addIssue({ code: 'custom', path: ['radius'], message: 'Radius must be 500 m, 1 km or 2 km.' });
-    if ((q.destLat === undefined) !== (q.destLng === undefined))
-      ctx.addIssue({ code: 'custom', path: ['destLat'], message: 'Destination needs both latitude and longitude.' });
     for (const c of CRITERIA) {
       const v = (q as Record<string, unknown>)[`w_${c}`];
       if (typeof v === 'number' && (v < WEIGHT_MIN || v > WEIGHT_MAX))

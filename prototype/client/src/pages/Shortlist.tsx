@@ -70,7 +70,7 @@ function Entry({ e, selected, onSelect, onRemoved }: { e: ShortlistEntryDto; sel
             .map((h) => (
               <AmenityHighlight key={h.category} item={h} />
             ))}
-          {n.commuteMin !== null && <span className="chip">Commute ~{n.commuteMin} min</span>}
+          {n.commuteMin !== null && <span className="chip">Commute ~{n.commuteMin} min{n.commuteLegs.length > 1 ? ' average' : ''}</span>}
         </div>
       ) : (
         <Notice tone="warn" className="mt-3">This neighbourhood is no longer in the current dataset.</Notice>

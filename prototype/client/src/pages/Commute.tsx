@@ -1,9 +1,9 @@
 // UC-5.2 Check Commute Route (FR-TRV-02 – FR-TRV-05).
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { MapContainer, Marker, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { TRAVEL_MODES, TRAVEL_MODE_LABELS, type NeighbourhoodDetail, type RouteEstimateDto, type TravelMode } from '@famplan/shared';
+import { DEFAULT_TRAVEL_MODE, TRAVEL_MODES, TRAVEL_MODE_LABELS, type NeighbourhoodDetail, type RouteEstimateDto, type TravelMode } from '@famplan/shared';
 import { api, ApiError, fmtDate, fmtDistance, scoringParams } from '../lib/api';
 import { useApp } from '../state/AppState';
 import { AddressSearch } from '../components/AddressSearch';
@@ -22,7 +22,8 @@ function FitRoute({ pts }: { pts: [number, number][] }) {
   return null;
 }
 
-type Dest = { lat: number; lng: number; label: string; address?: string };
+/** `mode` is the saved travel mode; a place searched on this page has none. */
+type Dest = { lat: number; lng: number; label: string; address?: string; mode?: TravelMode };
 
 export function CommutePage() {
   const { id = '' } = useParams();
@@ -30,13 +31,28 @@ export function CommutePage() {
   const origin = useMemo(() => originFromParams(searchParams), [searchParams]);
   const { prefs, scoring } = useApp();
   const [n, setN] = useState<NeighbourhoodDetail | null>(null);
-  const saved: Dest[] = prefs?.destinations.map((d) => ({ lat: d.lat, lng: d.lng, label: d.label, address: d.address })) ?? [];
-  const [dest, setDest] = useState<Dest | null>(scoring.destination ?? saved[0] ?? null);
-  const [mode, setMode] = useState<TravelMode>('pt');
+  const saved: Dest[] = prefs?.destinations.map((d) => ({ lat: d.lat, lng: d.lng, label: d.label, address: d.address, mode: d.mode })) ?? [];
+  const initial = scoring.destinations[0] ?? saved[0] ?? null;
+  const [dest, setDest] = useState<Dest | null>(initial);
+  const [mode, setMode] = useState<TravelMode>(initial?.mode ?? DEFAULT_TRAVEL_MODE);
+  const chosenHere = useRef(false);
+  const chooseDest = (next: Dest | null) => {
+    chosenHere.current = true;
+    setDest(next);
+    if (next?.mode) setMode(next.mode);
+  };
   const [barrierFree, setBarrierFree] = useState(false);
   const [route, setRoute] = useState<RouteEstimateDto | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // After a page refresh the saved destinations arrive once this page has opened.
+  useEffect(() => {
+    const first = scoring.destinations[0];
+    if (!first || chosenHere.current) return;
+    setDest(first);
+    setMode(first.mode);
+  }, [scoring.destinations]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -90,7 +106,7 @@ export function CommutePage() {
                 id="saved-dest"
                 className="input"
                 value={dest ? saved.findIndex((s) => s.lat === dest.lat && s.lng === dest.lng) : -1}
-                onChange={(e) => setDest(saved[Number(e.target.value)] ?? null)}
+                onChange={(e) => chooseDest(saved[Number(e.target.value)] ?? null)}
               >
                 <option value={-1}>Choose…</option>
                 {saved.map((s, i) => (
@@ -102,7 +118,7 @@ export function CommutePage() {
             </div>
           )}
           <div className="mt-3">
-            <AddressSearch label={saved.length ? 'Or search another place' : 'Destination'} onPick={(r) => setDest({ lat: r.lat, lng: r.lng, label: r.label, address: r.address })} />
+            <AddressSearch label={saved.length ? 'Or search another place' : 'Destination'} onPick={(r) => chooseDest({ lat: r.lat, lng: r.lng, label: r.label, address: r.address })} />
           </div>
           {dest && (
             <p className="mt-3 flex items-center gap-2 text-sm">
@@ -128,6 +144,12 @@ export function CommutePage() {
               </button>
             ))}
           </div>
+          {dest?.mode && dest.mode !== mode && (
+            <p className="mt-2 text-xs text-muted">
+              Preview only. The commute score uses {TRAVEL_MODE_LABELS[dest.mode]} for {dest.label}.{' '}
+              <Link to="/preferences" className="font-semibold text-cinnabar hover:underline">Change it in preferences</Link>
+            </p>
+          )}
         </fieldset>
 
         <label className="mt-4 flex items-center justify-between gap-3 rounded-lg border border-line bg-white px-4 py-3">

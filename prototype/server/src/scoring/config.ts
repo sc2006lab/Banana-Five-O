@@ -17,8 +17,8 @@ export interface ScoringConfiguration {
 }
 
 export const SCORING_CONFIG: ScoringConfiguration = {
-  version: 'famplan-score-v1.1',
-  effectiveDate: '2026-10-29',
+  version: 'famplan-score-v1.2',
+  effectiveDate: '2026-10-31',
   criteria: {
     childcare: {
       kind: 'count',
@@ -67,7 +67,7 @@ export const SCORING_CONFIG: ScoringConfiguration = {
       bestMin: 20,
       worstMin: 75,
       description:
-        'Estimated public-transport minutes to the first priority destination: 20 min or less scores 1.0, 75 min or more scores 0.',
+        "Average estimated minutes to every priority destination, each by its saved travel mode: 20 min or less scores 1.0, 75 min or more scores 0.",
     },
     accessibility: {
       kind: 'count',
