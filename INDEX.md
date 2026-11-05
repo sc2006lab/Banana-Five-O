@@ -10,7 +10,7 @@ Team Banana Five-O, SC2006 Software Engineering. FamPlan helps couples planning 
 
 | Deliverable | Files |
 |---|---|
-| Software Requirements Specification v1.6, including the use case model | [PDF](Lab5/FamPlan_SRS_v1.6.pdf), [Word](Lab5/FamPlan_SRS_v1.6.docx) |
+| Software Requirements Specification v1.7, including the use case model (§7: diagram, actors, catalogue and use case descriptions) and UI screenshots (§3.1) | [PDF](Lab5/FamPlan_SRS_v1.7.pdf), [Word](Lab5/FamPlan_SRS_v1.7.docx) |
 | Class diagrams of key classes | SRS §9.1 to §9.4; [Entity model](Lab5/figures/FamPlan_Class_Diagram_A_Entity_Model_v2.1.png), [Design layer](Lab5/figures/FamPlan_Class_Diagram_D_Design_Layer_v2.1.png), [Serverless and providers](Lab5/figures/FamPlan_Class_Diagram_E_Serverless_and_Providers_v2.1.png) |
 | System architecture | SRS §8.2; [figure](Lab5/figures/FamPlan_System_Architecture_v1.6.png) |
 | UI state machine / dialog map | SRS §10; [Lab 2 dialog map](Lab2/DialogMap.pdf) |
